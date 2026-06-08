@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import {
   ComposedChart, Bar, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer,
+  CartesianGrid, Tooltip, ResponsiveContainer, BarChart,
 } from "recharts"
 import { TrendingUp, DollarSign, CheckCircle2, Target, Plus, Trash2, Pencil, Check, X, AlertTriangle, Trophy } from "lucide-react"
 import { formatarMoeda } from "../../utils/format.js"
@@ -141,6 +141,7 @@ export default function Dashboard() {
   const [carregando, setCarregando] = useState(true)
   const [estoqueBaixo, setEstoqueBaixo] = useState([])
   const [topProdutos, setTopProdutos] = useState([])
+  const [faturamentoHoras, setFaturamentoHoras] = useState([])
   const [lembretes, setLembretes] = useState(() => {
     try { return JSON.parse(localStorage.getItem("burgeros_lembretes") || "[]") } catch { return [] }
   })
@@ -154,11 +155,13 @@ export default function Dashboard() {
       configuracoesService.getMeta(),
       produtosService.listarEstoqueBaixo(),
       dashboardService.topProdutos(),
-    ]).then(([m, cfg, eb, tp]) => {
+      dashboardService.faturamentoHoras(),
+    ]).then(([m, cfg, eb, tp, fh]) => {
       setMetricas(m)
       setMetaDiaria(cfg.valor)
       setEstoqueBaixo(eb)
       setTopProdutos(tp)
+      setFaturamentoHoras(fh)
     }).catch(() => {}).finally(() => setCarregando(false))
 
   useEffect(() => { carregarDados() }, [])
@@ -274,6 +277,24 @@ export default function Dashboard() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {faturamentoHoras.some(h => h.vendas > 0) && (
+        <div className="rounded-xl border border-borda bg-card p-6">
+          <div className="mb-4">
+            <h2 className="text-base font-bold text-texto">Faturamento por hora — hoje</h2>
+            <p className="text-sm text-texto-suave">Distribuição de vendas ao longo do dia</p>
+          </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={faturamentoHoras.filter(h => h.vendas > 0 || (faturamentoHoras.findIndex(x => x.hora === h.hora) > faturamentoHoras.findIndex(x => x.vendas > 0) - 1 && faturamentoHoras.findIndex(x => x.hora === h.hora) < faturamentoHoras.map(x => x.vendas).lastIndexOf(faturamentoHoras.filter(x => x.vendas > 0).at(-1)?.vendas) + 2))} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
+              <XAxis dataKey="hora" stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis stroke="#6b7280" fontSize={11} tickLine={false} axisLine={false} tickFormatter={v => v > 0 ? `R$${(v/1000).toFixed(1)}k` : ''} />
+              <Tooltip formatter={(v) => [`R$ ${v.toFixed(2)}`, "Vendas"]} contentStyle={{ background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 8, fontSize: 12 }} />
+              <Bar dataKey="vendas" fill="#f97316" radius={[4, 4, 0, 0]} barSize={20} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 

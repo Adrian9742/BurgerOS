@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Search, Plus, Minus, Trash2, ShoppingCart, ArrowLeft, User, MapPin, UserPlus, X, Loader2, Settings2, Check } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, ArrowLeft, User, MapPin, UserPlus, X, Loader2, Settings2, Check, Tag, Bike, Store, StickyNote } from "lucide-react"
 import { CATEGORIAS } from "../../utils/constants.js"
 import { produtosService } from "../../services/produtosService.js"
 import { clientesService } from "../../services/clientesService.js"
@@ -151,11 +151,17 @@ export default function NovoPedido() {
 
   const mesaInicial = location.state?.mesa ? String(location.state.mesa) : ""
   const [modoCliente, setModoCliente] = useState(mesaInicial ? "mesa" : "cliente")
+  const [tipoPedido, setTipoPedido] = useState("mesa")
   const [buscaCliente, setBuscaCliente] = useState("")
   const [clienteSel, setClienteSel] = useState(null)
   const [dropdownAberto, setDropdownAberto] = useState(false)
   const [modalNovoCliente, setModalNovoCliente] = useState(false)
   const [mesa, setMesa] = useState(mesaInicial)
+  const [observacao, setObservacao] = useState("")
+  const [desconto, setDesconto] = useState("")
+  const [descontoTipo, setDescontoTipo] = useState("percentual")
+  const [enderecoEntrega, setEnderecoEntrega] = useState("")
+  const [taxaEntrega, setTaxaEntrega] = useState("")
   const [carrinho, setCarrinho] = useState([])
   const [confirmando, setConfirmando] = useState(false)
   const [modalVariacoes, setModalVariacoes] = useState(null)
@@ -226,7 +232,11 @@ export default function NovoPedido() {
 
   const removerItem = (key) => setCarrinho((c) => c.filter((i) => i.key !== key))
 
-  const total = carrinho.reduce((s, i) => s + i.produto.valor * i.qtd, 0)
+  const totalItens = carrinho.reduce((s, i) => s + i.produto.valor * i.qtd, 0)
+  const descontoNum = parseFloat(desconto) || 0
+  const taxaNum = parseFloat(taxaEntrega) || 0
+  const valorDesconto = descontoTipo === "percentual" ? totalItens * (descontoNum / 100) : descontoNum
+  const total = Math.max(totalItens - valorDesconto + taxaNum, 0)
 
   const confirmar = async () => {
     if (carrinho.length === 0) return mostrar("Adicione ao menos um item", "erro")
@@ -238,6 +248,12 @@ export default function NovoPedido() {
       await adicionarPedido({
         cliente_id: modoCliente === "cliente" ? clienteSel.id : null,
         mesa: modoCliente === "mesa" ? `Mesa ${mesa}` : null,
+        tipo: tipoPedido,
+        observacao: observacao.trim() || null,
+        desconto: descontoNum > 0 ? descontoNum : null,
+        desconto_tipo: descontoNum > 0 ? descontoTipo : null,
+        endereco_entrega: tipoPedido === "delivery" ? enderecoEntrega.trim() || null : null,
+        taxa_entrega: tipoPedido === "delivery" ? taxaNum : 0,
         itens: carrinho.map((i) => ({
           produto_id: i.produto.id,
           quantidade: i.qtd,
@@ -267,6 +283,29 @@ export default function NovoPedido() {
         </button>
 
         <div className="mb-6 rounded-xl border border-borda bg-card p-5">
+          {/* Tipo do pedido */}
+          <div className="mb-4 flex gap-2">
+            {[
+              { chave: "mesa", rotulo: "Mesa", icone: MapPin },
+              { chave: "balcao", rotulo: "Balcão", icone: Store },
+              { chave: "delivery", rotulo: "Delivery", icone: Bike },
+            ].map(({ chave, rotulo, icone: Icone }) => (
+              <button
+                key={chave}
+                onClick={() => setTipoPedido(chave)}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                  tipoPedido === chave
+                    ? "bg-laranja text-fundo"
+                    : "border border-borda bg-fundo text-texto-suave hover:text-texto"
+                }`}
+              >
+                <Icone className="h-4 w-4" />
+                {rotulo}
+              </button>
+            ))}
+          </div>
+
+          {/* Identificação: cliente ou mesa (só se não for delivery) */}
           <div className="mb-4 flex gap-2">
             {[
               { chave: "cliente", rotulo: "Cliente", icone: User },
@@ -277,7 +316,7 @@ export default function NovoPedido() {
                 onClick={() => setModoCliente(chave)}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                   modoCliente === chave
-                    ? "bg-laranja text-fundo"
+                    ? "bg-laranja/15 text-laranja border border-laranja/30"
                     : "border border-borda bg-fundo text-texto-suave hover:text-texto"
                 }`}
               >
@@ -355,6 +394,82 @@ export default function NovoPedido() {
               />
             </div>
           )}
+
+          {/* Campos delivery */}
+          {tipoPedido === "delivery" && (
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="mb-1 block text-xs font-medium text-texto-suave">Endereço de entrega</label>
+                <input
+                  value={enderecoEntrega}
+                  onChange={(e) => setEnderecoEntrega(e.target.value)}
+                  placeholder="Rua, número, bairro..."
+                  className="w-full rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-texto-suave">Taxa de entrega (R$)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.50"
+                  value={taxaEntrega}
+                  onChange={(e) => setTaxaEntrega(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Observação do pedido */}
+          <div className="mt-4">
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-texto-suave">
+              <StickyNote className="h-3.5 w-3.5" /> Observação do pedido
+            </label>
+            <input
+              value={observacao}
+              onChange={(e) => setObservacao(e.target.value)}
+              placeholder="Ex: cliente alérgico a glúten, embrulhar para presente..."
+              className="w-full rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+            />
+          </div>
+
+          {/* Desconto */}
+          <div className="mt-4">
+            <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-texto-suave">
+              <Tag className="h-3.5 w-3.5" /> Desconto
+            </label>
+            <div className="flex gap-2">
+              <div className="flex rounded-lg border border-borda overflow-hidden">
+                {[{ v: "percentual", l: "%" }, { v: "fixo", l: "R$" }].map(({ v, l }) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setDescontoTipo(v)}
+                    className={`px-3 py-2 text-xs font-bold transition-colors ${descontoTipo === v ? "bg-laranja text-fundo" : "bg-fundo text-texto-suave hover:text-texto"}`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                min="0"
+                step={descontoTipo === "percentual" ? "1" : "0.50"}
+                max={descontoTipo === "percentual" ? "100" : undefined}
+                value={desconto}
+                onChange={(e) => setDesconto(e.target.value)}
+                placeholder={descontoTipo === "percentual" ? "0" : "0,00"}
+                className="w-32 rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+              />
+              {descontoNum > 0 && (
+                <span className="flex items-center text-xs text-status-entregue font-semibold">
+                  − {descontoTipo === "percentual" ? `${descontoNum}%` : `R$ ${descontoNum.toFixed(2)}`}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -440,6 +555,26 @@ export default function NovoPedido() {
         </div>
 
         <div className="border-t border-borda px-5 py-4">
+          {(descontoNum > 0 || taxaNum > 0) && (
+            <div className="mb-2 space-y-1 text-xs">
+              <div className="flex justify-between text-texto-suave">
+                <span>Subtotal</span>
+                <span>{formatarMoeda(totalItens)}</span>
+              </div>
+              {descontoNum > 0 && (
+                <div className="flex justify-between text-status-entregue">
+                  <span>Desconto ({descontoTipo === "percentual" ? `${descontoNum}%` : "fixo"})</span>
+                  <span>− {formatarMoeda(valorDesconto)}</span>
+                </div>
+              )}
+              {taxaNum > 0 && (
+                <div className="flex justify-between text-texto-suave">
+                  <span>Taxa de entrega</span>
+                  <span>+ {formatarMoeda(taxaNum)}</span>
+                </div>
+              )}
+            </div>
+          )}
           <div className="mb-3 flex items-center justify-between">
             <span className="text-sm text-texto-suave">Total</span>
             <span className="text-xl font-black text-texto">{formatarMoeda(total)}</span>

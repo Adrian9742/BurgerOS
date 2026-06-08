@@ -10,6 +10,16 @@ from app.schemas.pedido import PedidoCreate, PedidoResponse, PedidoDetalhadoResp
 _STATUS_VALIDOS = {"aguardando", "preparo", "pronto", "entregue", "cancelado"}
 
 
+def _calcular_total_final(total_itens: float, desconto, desconto_tipo, taxa_entrega) -> float:
+    total = total_itens
+    if desconto and desconto_tipo == "percentual":
+        total -= total * (float(desconto) / 100)
+    elif desconto and desconto_tipo == "fixo":
+        total -= float(desconto)
+    total += float(taxa_entrega or 0)
+    return round(max(total, 0), 2)
+
+
 def _to_response(pedido: Pedido) -> PedidoResponse:
     itens_str = []
     total = 0.0
@@ -18,6 +28,8 @@ def _to_response(pedido: Pedido) -> PedidoResponse:
         itens_str.append(f"{item.quantidade}x {nome}")
         total += float(item.valor_unit) * item.quantidade
 
+    total = round(total, 2)
+    total_final = _calcular_total_final(total, pedido.desconto, pedido.desconto_tipo, pedido.taxa_entrega)
     cliente_nome = pedido.cliente.nome if pedido.cliente else None
     abertoEm = int(pedido.criado_em.timestamp() * 1000)
 
@@ -25,10 +37,17 @@ def _to_response(pedido: Pedido) -> PedidoResponse:
         id=pedido.id,
         cliente=cliente_nome,
         mesa=pedido.mesa,
+        tipo=pedido.tipo or "mesa",
         itens=itens_str,
-        total=round(total, 2),
+        total=total,
+        total_final=total_final,
         status=pedido.status,
         forma_pagamento=pedido.forma_pagamento,
+        observacao=pedido.observacao,
+        desconto=float(pedido.desconto) if pedido.desconto is not None else None,
+        desconto_tipo=pedido.desconto_tipo,
+        endereco_entrega=pedido.endereco_entrega,
+        taxa_entrega=float(pedido.taxa_entrega or 0),
         abertoEm=abertoEm,
     )
 
@@ -101,6 +120,12 @@ def criar(db: Session, dados: PedidoCreate, usuario_id: int) -> PedidoResponse:
     pedido = Pedido(
         cliente_id=dados.cliente_id,
         mesa=dados.mesa,
+        tipo=dados.tipo,
+        observacao=dados.observacao,
+        desconto=dados.desconto,
+        desconto_tipo=dados.desconto_tipo,
+        endereco_entrega=dados.endereco_entrega,
+        taxa_entrega=dados.taxa_entrega,
         status="aguardando",
         usuario_id=usuario_id,
     )
@@ -137,7 +162,8 @@ def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int,
         if forma_pagamento:
             pedido.forma_pagamento = forma_pagamento
 
-        total = sum(float(item.valor_unit) * item.quantidade for item in pedido.itens)
+        total_itens = sum(float(item.valor_unit) * item.quantidade for item in pedido.itens)
+        total = _calcular_total_final(total_itens, pedido.desconto, pedido.desconto_tipo, pedido.taxa_entrega)
 
         db.add(Lancamento(
             tipo="entrada",

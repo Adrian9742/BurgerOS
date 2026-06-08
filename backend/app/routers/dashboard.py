@@ -17,3 +17,8 @@ def metricas(db: Session = Depends(get_db), _: Usuario = Depends(_CAIXA_OU_ADMIN
 @router.get("/top-produtos")
 def top_produtos(db: Session = Depends(get_db), _: Usuario = Depends(get_current_user)):
     return dashboard_service.get_top_produtos(db)
+
+
+@router.get("/faturamento-horas")
+def faturamento_horas(db: Session = Depends(get_db), _: Usuario = Depends(get_current_user)):
+    return dashboard_service.get_faturamento_horas(db)

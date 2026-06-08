@@ -10,4 +10,9 @@ export const dashboardService = {
     const { data } = await api.get('/api/dashboard/top-produtos')
     return data
   },
+
+  async faturamentoHoras() {
+    const { data } = await api.get('/api/dashboard/faturamento-horas')
+    return data
+  },
 }

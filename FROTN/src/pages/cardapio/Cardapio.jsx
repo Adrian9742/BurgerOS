@@ -10,7 +10,7 @@ import { produtosService } from "../../services/produtosService.js"
 
 const vazio = {
   nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "",
-  disponivel: true, estoque: "", estoque_minimo: "", variacoes: [],
+  disponivel: true, estoque: "", estoque_minimo: "", variacoes: [], custo: "",
 }
 
 function BadgeEstoque({ estoque, minimo }) {
@@ -167,6 +167,7 @@ export default function Cardapio() {
     setForm({
       ...p,
       valor: String(p.valor),
+      custo: p.custo != null ? String(p.custo) : "",
       estoque: p.estoque ?? "",
       estoque_minimo: p.estoque_minimo ?? "",
       variacoes: p.variacoes || [],
@@ -202,9 +203,11 @@ export default function Cardapio() {
       .filter((v) => v.nome.trim() && v.opcoes.length > 0)
 
     setSalvando(true)
+    const custoNum = form.custo === "" ? null : Number.parseFloat(form.custo)
     const payload = {
       ...form,
       valor: valorNum,
+      custo: custoNum,
       estoque: form.estoque === "" ? null : Number(form.estoque),
       estoque_minimo: form.estoque_minimo === "" ? null : Number(form.estoque_minimo),
       variacoes: variacoesLimpas.length > 0 ? variacoesLimpas : null,
@@ -261,6 +264,7 @@ export default function Cardapio() {
               <th className="px-5 py-3 font-semibold">Nome</th>
               <th className="px-5 py-3 font-semibold">Categoria</th>
               <th className="px-5 py-3 font-semibold">Valor</th>
+              <th className="px-5 py-3 font-semibold">Margem</th>
               <th className="px-5 py-3 font-semibold">Estoque</th>
               <th className="px-5 py-3 font-semibold">Variações</th>
               <th className="px-5 py-3 font-semibold">Disponível</th>
@@ -283,6 +287,16 @@ export default function Cardapio() {
                 </td>
                 <td className="px-5 py-3.5 text-texto-suave">{p.categoria}</td>
                 <td className="px-5 py-3.5 font-bold text-texto">{formatarMoeda(p.valor)}</td>
+                <td className="px-5 py-3.5">
+                  {p.custo != null ? (() => {
+                    const margem = ((p.valor - p.custo) / p.valor) * 100
+                    return (
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${margem >= 50 ? "bg-status-entregue/15 text-status-entregue" : margem >= 25 ? "bg-yellow-500/15 text-yellow-400" : "bg-status-cancelado/15 text-status-cancelado"}`}>
+                        {margem.toFixed(0)}%
+                      </span>
+                    )
+                  })() : <span className="text-xs text-texto-fraco">—</span>}
+                </td>
                 <td className="px-5 py-3.5">
                   <BadgeEstoque estoque={p.estoque} minimo={p.estoque_minimo} />
                 </td>
@@ -354,6 +368,32 @@ export default function Cardapio() {
               onChange={(e) => setForm({ ...form, valor: e.target.value })}
               placeholder="0,00"
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Campo
+                rotulo="Custo de produção (R$)"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.custo}
+                onChange={(e) => setForm({ ...form, custo: e.target.value })}
+                placeholder="0,00 — opcional"
+              />
+            </div>
+            <div className="flex flex-col justify-end pb-0.5">
+              {form.custo && form.valor && (() => {
+                const margem = ((parseFloat(form.valor) - parseFloat(form.custo)) / parseFloat(form.valor)) * 100
+                return isNaN(margem) ? null : (
+                  <div className="rounded-lg border border-borda bg-fundo px-3 py-2 text-center">
+                    <p className="text-xs text-texto-fraco">Margem bruta</p>
+                    <p className={`text-lg font-black ${margem >= 50 ? "text-status-entregue" : margem >= 25 ? "text-yellow-400" : "text-status-cancelado"}`}>
+                      {margem.toFixed(1)}%
+                    </p>
+                  </div>
+                )
+              })()}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Campo

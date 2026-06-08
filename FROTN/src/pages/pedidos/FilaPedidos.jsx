@@ -118,9 +118,24 @@ function CardAtivo({ pedido, proximo, onAvancar, onCancelar }) {
             <><MapPin className="h-3.5 w-3.5 text-texto-fraco" />{pedido.mesa}</>
           )}
         </div>
+        {(pedido.tipo === "delivery" || pedido.tipo === "balcao") && (
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pedido.tipo === "delivery" ? "bg-blue-500/15 text-blue-400" : "bg-texto-suave/15 text-texto-suave"}`}>
+              {pedido.tipo === "delivery" ? "🛵 Delivery" : "🏪 Balcão"}
+            </span>
+            {pedido.tipo === "delivery" && pedido.endereco_entrega && (
+              <span className="truncate text-xs text-texto-fraco">{pedido.endereco_entrega}</span>
+            )}
+          </div>
+        )}
         <ul className="mt-2 space-y-0.5">
           {pedido.itens.map((item, i) => <li key={i} className="text-xs text-texto-suave">{item}</li>)}
         </ul>
+        {pedido.observacao && (
+          <div className="mt-2 rounded-lg bg-yellow-500/10 px-2.5 py-1.5 text-xs text-yellow-300">
+            📝 {pedido.observacao}
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between border-t border-borda pt-3">
           <span className="text-sm font-bold text-texto">{formatarMoeda(pedido.total)}</span>
           <div className="flex items-center gap-1.5">
@@ -188,7 +203,10 @@ function CardConcluido({ pedido, podeDeletar, onDeletar }) {
 
       <div className="mt-3 flex items-center justify-between border-t border-borda pt-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-texto">{formatarMoeda(pedido.total)}</span>
+          <span className="text-sm font-bold text-texto">{formatarMoeda(pedido.total_final ?? pedido.total)}</span>
+          {pedido.total_final != null && pedido.total_final !== pedido.total && (
+            <span className="text-xs line-through text-texto-fraco">{formatarMoeda(pedido.total)}</span>
+          )}
           {entregue && pedido.forma_pagamento && (
             <span className="rounded-full bg-status-entregue/10 px-2 py-0.5 text-xs text-status-entregue">
               {labelFormaPagamento[pedido.forma_pagamento] ?? pedido.forma_pagamento}

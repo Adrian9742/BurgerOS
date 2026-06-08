@@ -20,6 +20,7 @@ class ProdutoCreate(BaseModel):
     estoque: Optional[int] = None
     estoque_minimo: Optional[int] = None
     variacoes: Optional[list[dict[str, Any]]] = None
+    custo: Optional[Decimal] = None
 
     @field_validator("valor")
     @classmethod
@@ -38,6 +39,7 @@ class ProdutoUpdate(BaseModel):
     estoque: Optional[int] = None
     estoque_minimo: Optional[int] = None
     variacoes: Optional[list[dict[str, Any]]] = None
+    custo: Optional[Decimal] = None
 
 
 class ProdutoResponse(BaseModel):
@@ -50,5 +52,6 @@ class ProdutoResponse(BaseModel):
     estoque: Optional[int] = None
     estoque_minimo: Optional[int] = None
     variacoes: Optional[list[dict[str, Any]]] = None
+    custo: Optional[float] = None
 
     model_config = {"from_attributes": True}

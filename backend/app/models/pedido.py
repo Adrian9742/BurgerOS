@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -10,8 +10,14 @@ class Pedido(Base):
     id = Column(Integer, primary_key=True, index=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
     mesa = Column(String(20), nullable=True)
+    tipo = Column(String(20), default="mesa", nullable=False)
     status = Column(String(20), default="aguardando", nullable=False)
     forma_pagamento = Column(String(20), nullable=True)
+    observacao = Column(String, nullable=True)
+    desconto = Column(Numeric(10, 2), nullable=True)
+    desconto_tipo = Column(String(15), nullable=True)
+    endereco_entrega = Column(String, nullable=True)
+    taxa_entrega = Column(Numeric(10, 2), default=0, nullable=False)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

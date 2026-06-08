@@ -64,6 +64,26 @@ def get_metricas(db: Session) -> dict:
     }
 
 
+def get_faturamento_horas(db: Session) -> list[dict]:
+    from datetime import datetime
+    hoje = date.today()
+    resultados = (
+        db.query(
+            func.extract("hour", Lancamento.criado_em).label("hora"),
+            func.sum(Lancamento.valor).label("total"),
+        )
+        .filter(
+            func.date(Lancamento.criado_em) == hoje,
+            Lancamento.tipo == "entrada",
+        )
+        .group_by(func.extract("hour", Lancamento.criado_em))
+        .order_by(func.extract("hour", Lancamento.criado_em))
+        .all()
+    )
+    por_hora = {int(r.hora): round(float(r.total), 2) for r in resultados}
+    return [{"hora": f"{h:02d}h", "vendas": por_hora.get(h, 0)} for h in range(8, 24)]
+
+
 def get_top_produtos(db: Session, limite: int = 8) -> list[dict]:
     hoje = date.today()
     inicio_semana = hoje - timedelta(days=6)

@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { MapPin, Plus, Settings, X, ClipboardList, RefreshCw } from "lucide-react"
+import { MapPin, Plus, Settings, X, ClipboardList, Divide } from "lucide-react"
 import { usePedidos } from "../../context/PedidosContext.jsx"
 import { formatarMoeda } from "../../utils/format.js"
 
@@ -30,7 +30,9 @@ function cardMesaCor(pedidosMesa) {
 }
 
 function PopoverMesa({ numMesa, pedidos, onFechar, onNovoPedido }) {
-  const total = pedidos.reduce((s, p) => s + (p.total || 0), 0)
+  const total = pedidos.reduce((s, p) => s + (p.total_final ?? p.total ?? 0), 0)
+  const [dividir, setDividir] = useState(false)
+  const [nPessoas, setNPessoas] = useState(2)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onFechar}>
@@ -68,9 +70,43 @@ function PopoverMesa({ numMesa, pedidos, onFechar, onNovoPedido }) {
         </ul>
 
         {total > 0 && (
-          <div className="mb-4 flex items-center justify-between rounded-lg border border-borda bg-fundo px-3 py-2.5">
+          <div className="mb-3 flex items-center justify-between rounded-lg border border-borda bg-fundo px-3 py-2.5">
             <span className="text-sm text-texto-suave">Total acumulado</span>
             <span className="text-sm font-bold text-laranja">{formatarMoeda(total)}</span>
+          </div>
+        )}
+
+        {/* Divisão de conta */}
+        {total > 0 && (
+          <div className="mb-4">
+            {!dividir ? (
+              <button
+                onClick={() => setDividir(true)}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-borda py-2 text-sm text-texto-suave transition-colors hover:border-laranja/40 hover:text-texto"
+              >
+                <Divide className="h-4 w-4" />
+                Dividir conta
+              </button>
+            ) : (
+              <div className="rounded-lg border border-laranja/30 bg-laranja/5 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-texto-suave">Dividir entre</span>
+                  <button onClick={() => setDividir(false)} className="text-texto-fraco hover:text-texto">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setNPessoas(n => Math.max(2, n - 1))} className="flex h-7 w-7 items-center justify-center rounded-full bg-card text-texto-suave hover:text-texto font-bold">−</button>
+                  <span className="text-lg font-black text-texto w-6 text-center">{nPessoas}</span>
+                  <button onClick={() => setNPessoas(n => n + 1)} className="flex h-7 w-7 items-center justify-center rounded-full bg-card text-texto-suave hover:text-texto font-bold">+</button>
+                  <span className="text-sm text-texto-suave">pessoas</span>
+                </div>
+                <div className="mt-2 rounded-lg bg-card p-2 text-center">
+                  <p className="text-xs text-texto-fraco">Cada pessoa paga</p>
+                  <p className="text-xl font-black text-laranja">{formatarMoeda(total / nPessoas)}</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

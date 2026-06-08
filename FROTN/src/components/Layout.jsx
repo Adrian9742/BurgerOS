@@ -14,6 +14,7 @@ const titulos = {
   "/sistema": { titulo: "Sistema", subtitulo: "Configurações e backup" },
   "/turno": { titulo: "Fechamento de Caixa", subtitulo: "Controle de turnos e fechamento do dia" },
   "/mesas": { titulo: "Mapa de Mesas", subtitulo: "Visão geral das mesas e ocupação" },
+  "/cozinha": { titulo: "Cozinha (KDS)", subtitulo: "Tela da cozinha — pedidos em andamento" },
 }
 
 export default function Layout() {

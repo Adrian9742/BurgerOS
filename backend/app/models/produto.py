@@ -15,4 +15,5 @@ class Produto(Base):
     estoque = Column(Integer, nullable=True)
     estoque_minimo = Column(Integer, nullable=True)
     variacoes = Column(JSON, nullable=True)
+    custo = Column(Numeric(10, 2), nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings, Lock, MapPin } from "lucide-react"
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings, Lock, MapPin, ChefHat } from "lucide-react"
 import { usePedidos } from "../context/PedidosContext.jsx"
 
 const itens = [
   { rota: "/", rotulo: "Dashboard", icone: LayoutDashboard, fim: true },
   { rota: "/pedidos", rotulo: "Pedidos", icone: ClipboardList },
+  { rota: "/cozinha", rotulo: "Cozinha (KDS)", icone: ChefHat },
   { rota: "/mesas", rotulo: "Mapa de Mesas", icone: MapPin },
   { rota: "/cardapio", rotulo: "Cardápio", icone: UtensilsCrossed },
   { rota: "/financeiro", rotulo: "Financeiro", icone: Wallet },

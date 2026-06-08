@@ -13,6 +13,7 @@ import Perfil from "./pages/perfil/Perfil.jsx"
 import Sistema from "./pages/sistema/Sistema.jsx"
 import Turno from "./pages/turno/Turno.jsx"
 import Mesas from "./pages/mesas/Mesas.jsx"
+import Cozinha from "./pages/cozinha/Cozinha.jsx"
 
 function RotaProtegida({ children }) {
   const { usuario } = useAuth()
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/sistema" element={<Sistema />} />
         <Route path="/turno" element={<Turno />} />
         <Route path="/mesas" element={<Mesas />} />
+        <Route path="/cozinha" element={<Cozinha />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
