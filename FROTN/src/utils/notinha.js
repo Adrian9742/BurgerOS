@@ -19,24 +19,51 @@ export function gerarHtmlNotinha(pedido) {
     return linha(truncated, R(item.subtotal))
   }).join("\n")
 
-  const obsLinhas = pedido.itens
+  const obsItens = pedido.itens
     .filter((i) => i.observacao)
     .map((i) => `  ↳ ${i.nome}: ${i.observacao}`)
     .join("\n")
 
+  const tipoLabel = { mesa: null, balcao: "Balcão", delivery: "🛵 DELIVERY" }
+  const linhasTipo = tipoLabel[pedido.tipo || "mesa"]
+    ? `Tipo: ${tipoLabel[pedido.tipo]}\n`
+    : ""
+
   const identificacao = pedido.cliente
     ? `Cliente: ${pedido.cliente}`
-    : `Mesa: ${pedido.mesa || "—"}`
+    : pedido.mesa
+    ? `Mesa: ${pedido.mesa}`
+    : "Balcão"
 
-  const labelPagamento = {
-    dinheiro: "Dinheiro",
-    cartao: "Cartão",
-    pix: "PIX",
-    fiado: "Fiado",
-  }
+  const linhaEnderecoEntrega = pedido.tipo === "delivery" && pedido.endereco_entrega
+    ? `Entrega: ${pedido.endereco_entrega}\n`
+    : ""
+
+  const labelPagamento = { dinheiro: "Dinheiro", cartao: "Cartão", pix: "PIX", fiado: "Fiado" }
   const linhaPagamento = pedido.forma_pagamento
     ? `${linha("Pagamento", labelPagamento[pedido.forma_pagamento] ?? pedido.forma_pagamento)}\n`
     : ""
+
+  const linhaObsPedido = pedido.observacao
+    ? `Obs: ${pedido.observacao}\n`
+    : ""
+
+  const totalItens = pedido.total
+  const totalFinal = pedido.total_final ?? pedido.total
+  const temDesconto = pedido.desconto && pedido.desconto > 0
+  const temTaxa = pedido.taxa_entrega && pedido.taxa_entrega > 0
+
+  const linhasTotal = temDesconto || temTaxa
+    ? [
+        linha("Subtotal", R(totalItens)),
+        temDesconto ? linha(
+          `Desconto (${pedido.desconto_tipo === "percentual" ? pedido.desconto + "%" : "fixo"})`,
+          `- ${R(pedido.desconto_tipo === "percentual" ? totalItens * pedido.desconto / 100 : pedido.desconto)}`
+        ) : null,
+        temTaxa ? linha("Taxa entrega", `+ ${R(pedido.taxa_entrega)}`) : null,
+        linha("TOTAL", R(totalFinal)),
+      ].filter(Boolean).join("\n")
+    : linha("TOTAL", R(totalFinal))
 
   const texto = `
         B U R G E R O S
@@ -45,12 +72,12 @@ ${divisor}
 ${dataStr}  ${horaStr}
 Pedido #${pedido.id}
 ${identificacao}
-${divisor}
+${linhasTipo}${linhaEnderecoEntrega}${linhaObsPedido}${divisor}
 ITENS
 ${divisor}
 ${linhasItens}
-${obsLinhas ? obsLinhas + "\n" : ""}${divisor}
-${linha("TOTAL", R(pedido.total))}
+${obsItens ? obsItens + "\n" : ""}${divisor}
+${linhasTotal}
 ${linhaPagamento}${divisor}
   Obrigado pela preferência!
    Volte sempre! 🍔

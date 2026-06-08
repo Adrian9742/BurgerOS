@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Plus, Pencil, Trash2, X, Settings2 } from "lucide-react"
+import { Plus, Pencil, Trash2, X, Settings2, Package } from "lucide-react"
 import { CATEGORIAS } from "../../utils/constants.js"
 import Modal from "../../components/Modal.jsx"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
@@ -10,7 +10,7 @@ import { produtosService } from "../../services/produtosService.js"
 
 const vazio = {
   nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "",
-  disponivel: true, estoque: "", estoque_minimo: "", variacoes: [], custo: "",
+  disponivel: true, estoque: "", estoque_minimo: "", variacoes: [], custo: "", componentes: [],
 }
 
 function BadgeEstoque({ estoque, minimo }) {
@@ -131,6 +131,85 @@ function EditorVariacoes({ variacoes, onChange }) {
   )
 }
 
+function EditorCombo({ componentes, onChange, todosProdutos }) {
+  const [prodSel, setProdSel] = useState("")
+  const [qtdSel, setQtdSel] = useState("1")
+
+  const adicionar = () => {
+    const id = parseInt(prodSel)
+    if (!id) return
+    const jaExiste = componentes.find(c => c.produto_id === id)
+    if (jaExiste) {
+      onChange(componentes.map(c => c.produto_id === id ? { ...c, quantidade: c.quantidade + parseInt(qtdSel || 1) } : c))
+    } else {
+      onChange([...componentes, { produto_id: id, quantidade: parseInt(qtdSel || 1) }])
+    }
+    setProdSel("")
+    setQtdSel("1")
+  }
+
+  const remover = (id) => onChange(componentes.filter(c => c.produto_id !== id))
+
+  const prodDisponiveis = todosProdutos.filter(p => !componentes.find(c => c.produto_id === p.id))
+
+  return (
+    <div className="space-y-3 rounded-xl border border-laranja/20 bg-laranja/5 p-4">
+      <div className="flex items-center gap-2">
+        <Package className="h-4 w-4 text-laranja" />
+        <span className="text-sm font-semibold text-texto">Componentes do Combo</span>
+        <span className="text-xs text-texto-fraco">(estoque dos itens reduz ao vender)</span>
+      </div>
+
+      {componentes.length === 0 && (
+        <p className="py-1 text-center text-xs text-texto-fraco">Nenhum componente — adicione abaixo</p>
+      )}
+
+      <ul className="space-y-1.5">
+        {componentes.map(c => {
+          const prod = todosProdutos.find(p => p.id === c.produto_id)
+          return (
+            <li key={c.produto_id} className="flex items-center gap-2 rounded-lg border border-borda bg-card px-3 py-2">
+              <span className="flex-1 text-sm text-texto">{prod?.nome ?? `Produto #${c.produto_id}`}</span>
+              <span className="text-xs text-texto-fraco">× {c.quantidade}</span>
+              <button type="button" onClick={() => remover(c.produto_id)} className="text-texto-fraco hover:text-status-cancelado">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+
+      <div className="flex gap-2">
+        <select
+          value={prodSel}
+          onChange={e => setProdSel(e.target.value)}
+          className="flex-1 rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto focus:border-laranja focus:outline-none"
+        >
+          <option value="">Selecionar produto...</option>
+          {prodDisponiveis.map(p => (
+            <option key={p.id} value={p.id}>{p.nome}</option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min="1"
+          value={qtdSel}
+          onChange={e => setQtdSel(e.target.value)}
+          className="w-16 rounded-lg border border-borda bg-fundo px-2 py-2 text-sm text-texto focus:border-laranja focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={adicionar}
+          disabled={!prodSel}
+          className="flex items-center gap-1 rounded-lg border border-laranja/30 bg-laranja/10 px-3 py-2 text-xs font-medium text-laranja transition-colors hover:bg-laranja/20 disabled:opacity-40"
+        >
+          <Plus className="h-3.5 w-3.5" /> Add
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Cardapio() {
   const { mostrar } = useToast()
   const [produtos, setProdutos] = useState([])
@@ -171,6 +250,7 @@ export default function Cardapio() {
       estoque: p.estoque ?? "",
       estoque_minimo: p.estoque_minimo ?? "",
       variacoes: p.variacoes || [],
+      componentes: p.componentes || [],
     })
     setModalAberto(true)
   }
@@ -211,6 +291,7 @@ export default function Cardapio() {
       estoque: form.estoque === "" ? null : Number(form.estoque),
       estoque_minimo: form.estoque_minimo === "" ? null : Number(form.estoque_minimo),
       variacoes: variacoesLimpas.length > 0 ? variacoesLimpas : null,
+      componentes: form.componentes?.length > 0 ? form.componentes : null,
     }
     try {
       if (editando) {
@@ -301,7 +382,12 @@ export default function Cardapio() {
                   <BadgeEstoque estoque={p.estoque} minimo={p.estoque_minimo} />
                 </td>
                 <td className="px-5 py-3.5">
-                  {p.variacoes && p.variacoes.length > 0 ? (
+                  {p.componentes && p.componentes.length > 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-laranja/10 px-2.5 py-0.5 text-xs font-medium text-laranja">
+                      <Package className="h-3 w-3" />
+                      Combo ({p.componentes.length})
+                    </span>
+                  ) : p.variacoes && p.variacoes.length > 0 ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-laranja/10 px-2.5 py-0.5 text-xs font-medium text-laranja">
                       <Settings2 className="h-3 w-3" />
                       {p.variacoes.length} grupo{p.variacoes.length > 1 ? "s" : ""}
@@ -417,6 +503,12 @@ export default function Cardapio() {
           <EditorVariacoes
             variacoes={form.variacoes || []}
             onChange={(v) => setForm({ ...form, variacoes: v })}
+          />
+
+          <EditorCombo
+            componentes={form.componentes || []}
+            onChange={(v) => setForm({ ...form, componentes: v })}
+            todosProdutos={produtos.filter((p) => p.id !== editando)}
           />
 
           <div className="flex items-center justify-between rounded-lg border border-borda bg-fundo px-4 py-3">

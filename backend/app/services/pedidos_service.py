@@ -7,7 +7,7 @@ from app.models.cliente import Cliente
 from app.models.lancamento import Lancamento
 from app.schemas.pedido import PedidoCreate, PedidoResponse, PedidoDetalhadoResponse, ItemDetalhadoResponse
 
-_STATUS_VALIDOS = {"aguardando", "preparo", "pronto", "entregue", "cancelado"}
+_STATUS_VALIDOS = {"aguardando", "preparo", "pronto", "a_caminho", "entregue", "cancelado"}
 
 
 def _calcular_total_final(total_itens: float, desconto, desconto_tipo, taxa_entrega) -> float:
@@ -68,14 +68,23 @@ def detalhar(db: Session, pedido_id: int) -> PedidoDetalhadoResponse:
             subtotal=sub,
             observacao=item.observacao,
         ))
+    total = round(total, 2)
+    total_final = _calcular_total_final(total, pedido.desconto, pedido.desconto_tipo, pedido.taxa_entrega)
     return PedidoDetalhadoResponse(
         id=pedido.id,
         cliente=pedido.cliente.nome if pedido.cliente else None,
         mesa=pedido.mesa,
+        tipo=pedido.tipo or "mesa",
         itens=itens_det,
-        total=round(total, 2),
+        total=total,
+        total_final=total_final,
         status=pedido.status,
         forma_pagamento=pedido.forma_pagamento,
+        observacao=pedido.observacao,
+        desconto=float(pedido.desconto) if pedido.desconto is not None else None,
+        desconto_tipo=pedido.desconto_tipo,
+        endereco_entrega=pedido.endereco_entrega,
+        taxa_entrega=float(pedido.taxa_entrega or 0),
         abertoEm=int(pedido.criado_em.timestamp() * 1000),
     )
 
@@ -138,6 +147,12 @@ def criar(db: Session, dados: PedidoCreate, usuario_id: int) -> PedidoResponse:
             continue
         if produto.estoque is not None:
             produto.estoque -= item_dado.quantidade
+        # combo: reduz estoque de cada componente
+        if produto.componentes:
+            for comp in produto.componentes:
+                comp_prod = db.query(Produto).filter(Produto.id == comp.get("produto_id")).first()
+                if comp_prod and comp_prod.estoque is not None:
+                    comp_prod.estoque -= item_dado.quantidade * int(comp.get("quantidade", 1))
         db.add(ItemPedido(
             pedido_id=pedido.id,
             produto_id=produto.id,

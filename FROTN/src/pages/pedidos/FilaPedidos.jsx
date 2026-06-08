@@ -18,11 +18,13 @@ const colunasAtivas = [
   { chave: "aguardando", titulo: "Aguardando", cor: "text-status-aguardando", proximo: "preparo" },
   { chave: "preparo", titulo: "Em preparo", cor: "text-status-preparo", proximo: "pronto" },
   { chave: "pronto", titulo: "Pronto", cor: "text-status-pronto", proximo: "entregue" },
+  { chave: "a_caminho", titulo: "A caminho 🛵", cor: "text-blue-400", proximo: "entregue" },
 ]
 
 const rotuloProximo = {
   preparo: "Iniciar preparo",
   pronto: "Marcar pronto",
+  a_caminho: "Saiu p/ entrega",
   entregue: "Entregar",
 }
 
@@ -68,7 +70,8 @@ function ModalPagamento({ pedido, onConfirmar, onFechar }) {
 }
 
 // ── Card na fila ativa ───────────────────────────────────────────────────────
-function CardAtivo({ pedido, proximo, onAvancar, onCancelar }) {
+function CardAtivo({ pedido, proxinoBase, onAvancar, onCancelar }) {
+  const proximo = proxinoBase === "entregue" && pedido.tipo === "delivery" ? "a_caminho" : proxinoBase
   const [atualizando, setAtualizando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [modalPagamento, setModalPagamento] = useState(false)
@@ -331,9 +334,10 @@ export default function FilaPedidos() {
 
       {/* aba fila ativa — 3 colunas */}
       {aba === "fila" && (
-        <div className="grid grid-cols-3 gap-5">
+        <div className={`grid gap-5 ${pedidos.some(p => p.status === "a_caminho") ? "grid-cols-4" : "grid-cols-3"}`}>
           {colunasAtivas.map((coluna) => {
             const lista = pedidos.filter((p) => p.status === coluna.chave)
+            if (coluna.chave === "a_caminho" && lista.length === 0) return null
             return (
               <div key={coluna.chave} className="flex flex-col">
                 <div className="mb-3 flex items-center justify-between rounded-lg border border-borda bg-card px-3 py-2.5">
@@ -344,7 +348,7 @@ export default function FilaPedidos() {
                 </div>
                 <div className="flex flex-col gap-3">
                   {lista.map((p) => (
-                    <CardAtivo key={p.id} pedido={p} proximo={coluna.proximo} onAvancar={handleAvancar} onCancelar={handleCancelar} />
+                    <CardAtivo key={p.id} pedido={p} proxinoBase={coluna.proximo} onAvancar={handleAvancar} onCancelar={handleCancelar} />
                   ))}
                   {lista.length === 0 && (
                     <div className="rounded-xl border border-dashed border-borda py-8 text-center text-xs text-texto-fraco">

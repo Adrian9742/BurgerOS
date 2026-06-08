@@ -5,8 +5,9 @@ import { formatarCronometro, minutosDesde } from "../../utils/format.js"
 import { TEMPO_ALERTA_MINUTOS as _ALERTA_DEFAULT } from "../../utils/constants.js"
 
 const COLUNAS = [
-  { chave: "aguardando", titulo: "Aguardando", cor: "border-status-aguardando/60 bg-status-aguardando/5 text-status-aguardando" },
+  { chave: "aguardando", titulo: "Aguardando",  cor: "border-status-aguardando/60 bg-status-aguardando/5 text-status-aguardando" },
   { chave: "preparo",    titulo: "Em Preparo",  cor: "border-status-preparo/60 bg-status-preparo/5 text-status-preparo" },
+  { chave: "pronto",     titulo: "Pronto ✓",    cor: "border-status-pronto/60 bg-status-pronto/5 text-status-pronto" },
 ]
 
 function CardKDS({ pedido, onAvancar }) {
@@ -21,8 +22,8 @@ function CardKDS({ pedido, onAvancar }) {
     return () => clearInterval(id)
   }, [])
 
-  const proximo = pedido.status === "aguardando" ? "preparo" : "pronto"
-  const rotulo = pedido.status === "aguardando" ? "Iniciar Preparo" : "Marcar Pronto"
+  const proximo = pedido.status === "aguardando" ? "preparo" : pedido.status === "preparo" ? "pronto" : null
+  const rotulo = pedido.status === "aguardando" ? "Iniciar Preparo" : pedido.status === "preparo" ? "Marcar Pronto" : null
 
   const handleAvancar = async () => {
     if (atualizando) return
@@ -69,13 +70,15 @@ function CardKDS({ pedido, onAvancar }) {
         </div>
       )}
 
-      <button
-        onClick={handleAvancar}
-        disabled={atualizando}
-        className="w-full rounded-xl bg-laranja py-3 text-base font-bold text-fundo transition-colors hover:bg-laranja-hover disabled:opacity-50"
-      >
-        {atualizando ? "..." : rotulo}
-      </button>
+      {proximo && (
+        <button
+          onClick={handleAvancar}
+          disabled={atualizando}
+          className="w-full rounded-xl bg-laranja py-3 text-base font-bold text-fundo transition-colors hover:bg-laranja-hover disabled:opacity-50"
+        >
+          {atualizando ? "..." : rotulo}
+        </button>
+      )}
     </div>
   )
 }
@@ -93,7 +96,7 @@ export default function Cozinha() {
     await mudarStatus(id, status)
   }
 
-  const total = pedidos.filter(p => p.status === "aguardando" || p.status === "preparo").length
+  const total = pedidos.filter(p => ["aguardando", "preparo", "pronto"].includes(p.status)).length
 
   return (
     <div className="min-h-screen bg-fundo">
@@ -113,7 +116,7 @@ export default function Cozinha() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-3 gap-6">
         {COLUNAS.map(col => {
           const lista = pedidos.filter(p => p.status === col.chave)
           return (
