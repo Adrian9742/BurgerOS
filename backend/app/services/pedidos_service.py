@@ -64,7 +64,18 @@ def detalhar(db: Session, pedido_id: int) -> PedidoDetalhadoResponse:
 def listar(db: Session) -> list[PedidoResponse]:
     pedidos = (
         db.query(Pedido)
-        .filter(Pedido.status != "cancelado")
+        .filter(Pedido.status.not_in(["entregue", "cancelado"]))
+        .order_by(Pedido.criado_em.desc())
+        .limit(100)
+        .all()
+    )
+    return [_to_response(p) for p in pedidos]
+
+
+def listar_concluidos(db: Session) -> list[PedidoResponse]:
+    pedidos = (
+        db.query(Pedido)
+        .filter(Pedido.status.in_(["entregue", "cancelado"]))
         .order_by(Pedido.criado_em.desc())
         .limit(100)
         .all()
@@ -119,6 +130,7 @@ def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int,
     if novo_status == "entregue":
         if forma_pagamento:
             pedido.forma_pagamento = forma_pagamento
+
         total = sum(float(item.valor_unit) * item.quantidade for item in pedido.itens)
 
         db.add(Lancamento(
@@ -138,3 +150,19 @@ def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int,
     db.commit()
     db.refresh(pedido)
     return _to_response(pedido)
+
+
+def deletar(db: Session, pedido_id: int) -> None:
+    pedido = buscar(db, pedido_id)
+    db.query(Lancamento).filter(Lancamento.pedido_id == pedido_id).delete(synchronize_session=False)
+    db.delete(pedido)
+    db.commit()
+
+
+def resetar_dia(db: Session) -> dict:
+    count_lanc = db.query(Lancamento).delete(synchronize_session=False)
+    db.query(ItemPedido).delete(synchronize_session=False)
+    count_pedidos = db.query(Pedido).delete(synchronize_session=False)
+    db.query(Cliente).update({"total_gasto": 0, "ultimo_pedido": None}, synchronize_session=False)
+    db.commit()
+    return {"pedidos_removidos": count_pedidos, "lancamentos_removidos": count_lanc}

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react"
-import { Volume2, VolumeX, HardDrive, RefreshCw, CheckCircle, AlertCircle } from "lucide-react"
+import { Volume2, VolumeX, HardDrive, RefreshCw, CheckCircle, AlertCircle, Trash2, TriangleAlert } from "lucide-react"
 import { useToast } from "../../context/ToastContext.jsx"
+import { useAuth } from "../../context/AuthContext.jsx"
+import { pedidosService } from "../../services/pedidosService.js"
 
 function formatarTamanho(bytes) {
   if (bytes < 1024) return `${bytes} B`
@@ -17,10 +19,14 @@ function formatarData(iso) {
 
 export default function Sistema() {
   const { mostrar } = useToast()
+  const { usuario } = useAuth()
   const [somAtivado, setSomAtivado] = useState(localStorage.getItem("burgeros_som") !== "false")
   const [backups, setBackups] = useState([])
   const [fazendoBackup, setFazendoBackup] = useState(false)
+  const [resetando, setResetando] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const temElectron = typeof window.burgeros !== "undefined"
+  const isProprietario = usuario?.cargo === "Proprietário"
 
   useEffect(() => {
     if (temElectron) carregarBackups()
@@ -38,6 +44,27 @@ export default function Sistema() {
     setSomAtivado(novo)
     localStorage.setItem("burgeros_som", String(novo))
     mostrar(novo ? "Alertas sonoros ativados" : "Alertas sonoros desativados", "sucesso")
+  }
+
+  const handleResetar = async () => {
+    if (!confirmReset) {
+      setConfirmReset(true)
+      return
+    }
+    setResetando(true)
+    setConfirmReset(false)
+    try {
+      const resultado = await pedidosService.resetarDia()
+      mostrar(`Reset concluído: ${resultado.pedidos_removidos} pedidos e ${resultado.lancamentos_removidos} lançamentos removidos`, "sucesso")
+    } catch (e) {
+      if (e?.response?.status === 403) {
+        mostrar("Apenas Proprietário pode resetar o sistema", "erro")
+      } else {
+        mostrar("Erro ao resetar o sistema", "erro")
+      }
+    } finally {
+      setResetando(false)
+    }
   }
 
   const fazerBackup = async () => {
@@ -138,6 +165,48 @@ export default function Sistema() {
           <p className="text-sm text-texto-fraco">Nenhum backup encontrado. Clique em "Backup agora" para criar o primeiro.</p>
         ) : null}
       </div>
+
+      {/* Resetar Dia */}
+      {isProprietario && (
+        <div className="rounded-xl border border-status-cancelado/30 bg-status-cancelado/5 p-6">
+          <div className="mb-4 flex items-start gap-3">
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-status-cancelado" />
+            <div>
+              <h2 className="mb-1 text-base font-bold text-texto">Resetar Sistema (Modo Teste)</h2>
+              <p className="text-sm text-texto-suave">
+                Apaga <strong className="text-texto">todos os pedidos</strong>, lançamentos financeiros e zera o histórico de clientes.
+                Use apenas para testes. <strong className="text-status-cancelado">Ação irreversível.</strong>
+              </p>
+            </div>
+          </div>
+          {confirmReset ? (
+            <div className="flex items-center gap-3">
+              <p className="text-sm font-semibold text-status-cancelado">Tem certeza absoluta? Isso apaga tudo.</p>
+              <button
+                onClick={handleResetar}
+                disabled={resetando}
+                className="rounded-lg bg-status-cancelado px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {resetando ? "Resetando..." : "Sim, apagar tudo"}
+              </button>
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="rounded-lg border border-borda px-4 py-2 text-sm text-texto-suave hover:text-texto"
+              >
+                Cancelar
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleResetar}
+              className="flex items-center gap-2 rounded-lg border border-status-cancelado/40 px-4 py-2 text-sm font-semibold text-status-cancelado transition-colors hover:bg-status-cancelado/10"
+            >
+              <Trash2 className="h-4 w-4" />
+              Resetar sistema
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Versão */}
       <div className="rounded-xl border border-borda bg-card p-6">

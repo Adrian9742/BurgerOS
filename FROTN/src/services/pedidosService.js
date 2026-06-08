@@ -22,4 +22,18 @@ export const pedidosService = {
     const { data } = await api.get(`/api/pedidos/${id}`)
     return data
   },
+
+  async listarConcluidos() {
+    const { data } = await api.get('/api/pedidos?concluidos=true')
+    return data
+  },
+
+  async deletar(id) {
+    await api.delete(`/api/pedidos/${id}`)
+  },
+
+  async resetarDia() {
+    const { data } = await api.post('/api/pedidos/resetar-dia')
+    return data
+  },
 }

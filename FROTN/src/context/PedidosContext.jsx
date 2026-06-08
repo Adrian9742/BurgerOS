@@ -71,11 +71,22 @@ export function PedidosProvider({ children }) {
 
   const mudarStatus = async (id, novoStatus, formaPagamento = null) => {
     const atualizado = await pedidosService.mudarStatus(id, novoStatus, formaPagamento)
-    setPedidos((atual) => atual.map((p) => (p.id === id ? atualizado : p)))
+    if (novoStatus === "entregue" || novoStatus === "cancelado") {
+      setPedidos((atual) => atual.filter((p) => p.id !== id))
+      if (idsConhecidos.current) idsConhecidos.current.delete(id)
+    } else {
+      setPedidos((atual) => atual.map((p) => (p.id === id ? atualizado : p)))
+    }
+  }
+
+  const deletarPedido = async (id) => {
+    await pedidosService.deletar(id)
+    setPedidos((atual) => atual.filter((p) => p.id !== id))
+    if (idsConhecidos.current) idsConhecidos.current.delete(id)
   }
 
   return (
-    <PedidosContext.Provider value={{ pedidos, carregando, adicionarPedido, mudarStatus }}>
+    <PedidosContext.Provider value={{ pedidos, carregando, adicionarPedido, mudarStatus, deletarPedido }}>
       {children}
     </PedidosContext.Provider>
   )
