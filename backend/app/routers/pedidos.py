@@ -41,4 +41,4 @@ def mudar_status(
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_current_user),
 ):
-    return pedidos_service.mudar_status(db, pedido_id, dados.status, usuario_atual.id)
+    return pedidos_service.mudar_status(db, pedido_id, dados.status, usuario_atual.id, dados.forma_pagamento)

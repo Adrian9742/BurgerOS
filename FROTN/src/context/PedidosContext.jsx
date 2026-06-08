@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react"
 import { pedidosService } from "../services/pedidosService.js"
 import { getToken } from "../services/authService.js"
 
@@ -10,9 +10,26 @@ export function usePedidos() {
   return ctx
 }
 
+function tocarAlerta() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 880
+    osc.type = "sine"
+    gain.gain.setValueAtTime(0.25, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.4)
+  } catch {}
+}
+
 export function PedidosProvider({ children }) {
   const [pedidos, setPedidos] = useState([])
   const [carregando, setCarregando] = useState(true)
+  const idsConhecidos = useRef(null)
 
   const carregar = useCallback(async () => {
     if (!getToken()) {
@@ -21,6 +38,16 @@ export function PedidosProvider({ children }) {
     }
     try {
       const data = await pedidosService.listar()
+
+      if (idsConhecidos.current !== null) {
+        const novos = data.filter((p) => !idsConhecidos.current.has(p.id))
+        if (novos.length > 0) {
+          const somAtivado = localStorage.getItem("burgeros_som") !== "false"
+          if (somAtivado) tocarAlerta()
+        }
+      }
+      idsConhecidos.current = new Set(data.map((p) => p.id))
+
       setPedidos(data)
     } catch {
       // falha silenciosa nos refreshes periódicos
@@ -38,11 +65,12 @@ export function PedidosProvider({ children }) {
   const adicionarPedido = async (dados) => {
     const novo = await pedidosService.criar(dados)
     setPedidos((atual) => [novo, ...atual])
+    if (idsConhecidos.current) idsConhecidos.current.add(novo.id)
     return novo
   }
 
-  const mudarStatus = async (id, novoStatus) => {
-    const atualizado = await pedidosService.mudarStatus(id, novoStatus)
+  const mudarStatus = async (id, novoStatus, formaPagamento = null) => {
+    const atualizado = await pedidosService.mudarStatus(id, novoStatus, formaPagamento)
     setPedidos((atual) => atual.map((p) => (p.id === id ? atualizado : p)))
   }
 

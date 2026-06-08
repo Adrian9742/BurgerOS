@@ -1,11 +1,12 @@
-const { app, BrowserWindow, dialog } = require("electron")
+const { app, BrowserWindow, dialog, ipcMain } = require("electron")
 const path = require("path")
-const { spawn } = require("child_process")
+const { spawn, execFile } = require("child_process")
 const http = require("http")
 const fs = require("fs")
 
 const isDev = !app.isPackaged
 let backendProcess = null
+let backupInterval = null
 
 // ── encontra o executável Python disponível no sistema ──────────────────────
 function encontrarPython() {
@@ -89,6 +90,87 @@ async function iniciarBackend() {
   await aguardarBackend()
 }
 
+// ── backup automático com pg_dump ───────────────────────────────────────────
+function executarBackup() {
+  const backupDir = path.join(app.getPath("userData"), "backups")
+  fs.mkdirSync(backupDir, { recursive: true })
+
+  const agora = new Date()
+  const stamp = agora.toISOString().replace(/[T:]/g, "-").replace(/\..+/, "").replace(/-(\d{2}-\d{2})$/, "_$1")
+  const arquivo = path.join(backupDir, `backup-${stamp}.sql`)
+
+  execFile(
+    "pg_dump",
+    ["-U", "postgres", "-h", "localhost", "-p", "5432", "hamburgueria"],
+    { env: { ...process.env, PGPASSWORD: "real8800" }, timeout: 30000 },
+    (err, stdout) => {
+      if (err) {
+        const logPath = path.join(app.getPath("userData"), "backend.log")
+        try { fs.appendFileSync(logPath, `[BACKUP ERRO] ${err.message}\n`) } catch {}
+        return
+      }
+
+      fs.writeFileSync(arquivo, stdout, "utf8")
+
+      // guarda timestamp do último backup bem-sucedido
+      const metaPath = path.join(backupDir, "meta.json")
+      fs.writeFileSync(metaPath, JSON.stringify({ ultimoBackup: agora.toISOString() }), "utf8")
+
+      // mantém no máximo 30 backups
+      const lista = fs.readdirSync(backupDir)
+        .filter((f) => f.startsWith("backup-") && f.endsWith(".sql"))
+        .sort()
+      if (lista.length > 30) {
+        lista.slice(0, lista.length - 30).forEach((f) => {
+          try { fs.unlinkSync(path.join(backupDir, f)) } catch {}
+        })
+      }
+    },
+  )
+}
+
+function agendarBackups() {
+  // verifica se precisa rodar agora (último backup > 24h ou nunca)
+  const metaPath = path.join(app.getPath("userData"), "backups", "meta.json")
+  let deveRodarAgora = true
+  try {
+    const meta = JSON.parse(fs.readFileSync(metaPath, "utf8"))
+    const ultimo = new Date(meta.ultimoBackup)
+    deveRodarAgora = (Date.now() - ultimo.getTime()) > 24 * 60 * 60 * 1000
+  } catch {}
+
+  if (deveRodarAgora) {
+    // pequeno delay para o backend estar totalmente pronto
+    setTimeout(executarBackup, 5000)
+  }
+
+  // agendamento a cada 24h
+  backupInterval = setInterval(executarBackup, 24 * 60 * 60 * 1000)
+}
+
+// ── handler IPC para backup manual (chamado pela página Configurações) ──────
+ipcMain.handle("backup:executar", () => {
+  executarBackup()
+  return { ok: true }
+})
+
+ipcMain.handle("backup:listar", () => {
+  const backupDir = path.join(app.getPath("userData"), "backups")
+  try {
+    const lista = fs.readdirSync(backupDir)
+      .filter((f) => f.startsWith("backup-") && f.endsWith(".sql"))
+      .sort()
+      .reverse()
+      .map((nome) => {
+        const stat = fs.statSync(path.join(backupDir, nome))
+        return { nome, tamanho: stat.size, data: stat.mtime.toISOString() }
+      })
+    return lista
+  } catch {
+    return []
+  }
+})
+
 // ── cria a janela principal ──────────────────────────────────────────────────
 function criarJanela() {
   const win = new BrowserWindow({
@@ -101,6 +183,7 @@ function criarJanela() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, "preload.cjs"),
     },
   })
 
@@ -117,6 +200,7 @@ function criarJanela() {
 app.whenReady().then(async () => {
   try {
     await iniciarBackend()
+    agendarBackups()
     criarJanela()
   } catch (err) {
     dialog.showErrorBox("BurgerOS — Falha na inicialização", err.message)
@@ -129,6 +213,7 @@ app.whenReady().then(async () => {
 })
 
 app.on("window-all-closed", () => {
+  if (backupInterval) clearInterval(backupInterval)
   if (backendProcess) {
     backendProcess.kill()
     backendProcess = null

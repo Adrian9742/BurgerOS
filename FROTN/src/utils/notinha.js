@@ -28,6 +28,16 @@ export function gerarHtmlNotinha(pedido) {
     ? `Cliente: ${pedido.cliente}`
     : `Mesa: ${pedido.mesa || "—"}`
 
+  const labelPagamento = {
+    dinheiro: "Dinheiro",
+    cartao: "Cartão",
+    pix: "PIX",
+    fiado: "Fiado",
+  }
+  const linhaPagamento = pedido.forma_pagamento
+    ? `${linha("Pagamento", labelPagamento[pedido.forma_pagamento] ?? pedido.forma_pagamento)}\n`
+    : ""
+
   const texto = `
         B U R G E R O S
      Sistema de Gestão
@@ -41,7 +51,7 @@ ${divisor}
 ${linhasItens}
 ${obsLinhas ? obsLinhas + "\n" : ""}${divisor}
 ${linha("TOTAL", R(pedido.total))}
-${divisor}
+${linhaPagamento}${divisor}
   Obrigado pela preferência!
    Volte sempre! 🍔
 ${divisor}`.trim()

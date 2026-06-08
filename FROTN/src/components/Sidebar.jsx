@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User } from "lucide-react"
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings } from "lucide-react"
 
 const itens = [
   { rota: "/", rotulo: "Dashboard", icone: LayoutDashboard, fim: true },
@@ -10,6 +10,7 @@ const itens = [
   { rota: "/clientes", rotulo: "Clientes", icone: Users },
   { rota: "/agenda", rotulo: "Agenda", icone: Calendar },
   { rota: "/perfil", rotulo: "Perfil", icone: User },
+  { rota: "/sistema", rotulo: "Sistema", icone: Settings },
 ]
 
 function RelogioAoVivo() {

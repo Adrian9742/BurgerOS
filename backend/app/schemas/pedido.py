@@ -16,6 +16,7 @@ class PedidoCreate(BaseModel):
 
 class MudarStatusRequest(BaseModel):
     status: str
+    forma_pagamento: Optional[str] = None
 
 
 class ItemDetalhadoResponse(BaseModel):
@@ -33,6 +34,7 @@ class PedidoDetalhadoResponse(BaseModel):
     itens: list[ItemDetalhadoResponse]
     total: float
     status: str
+    forma_pagamento: Optional[str] = None
     abertoEm: int
 
 
@@ -43,4 +45,5 @@ class PedidoResponse(BaseModel):
     itens: list[str]
     total: float
     status: str
+    forma_pagamento: Optional[str] = None
     abertoEm: int

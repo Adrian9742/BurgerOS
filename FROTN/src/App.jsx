@@ -10,6 +10,7 @@ import Caixa from "./pages/financeiro/Caixa.jsx"
 import Clientes from "./pages/clientes/Clientes.jsx"
 import Agenda from "./pages/agenda/Agenda.jsx"
 import Perfil from "./pages/perfil/Perfil.jsx"
+import Sistema from "./pages/sistema/Sistema.jsx"
 
 function RotaProtegida({ children }) {
   const { usuario } = useAuth()
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/agenda" element={<Agenda />} />
         <Route path="/perfil" element={<Perfil />} />
+        <Route path="/sistema" element={<Sistema />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

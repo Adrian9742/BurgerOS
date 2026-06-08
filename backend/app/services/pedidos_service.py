@@ -28,6 +28,7 @@ def _to_response(pedido: Pedido) -> PedidoResponse:
         itens=itens_str,
         total=round(total, 2),
         status=pedido.status,
+        forma_pagamento=pedido.forma_pagamento,
         abertoEm=abertoEm,
     )
 
@@ -55,6 +56,7 @@ def detalhar(db: Session, pedido_id: int) -> PedidoDetalhadoResponse:
         itens=itens_det,
         total=round(total, 2),
         status=pedido.status,
+        forma_pagamento=pedido.forma_pagamento,
         abertoEm=int(pedido.criado_em.timestamp() * 1000),
     )
 
@@ -107,7 +109,7 @@ def criar(db: Session, dados: PedidoCreate, usuario_id: int) -> PedidoResponse:
     return _to_response(pedido)
 
 
-def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int) -> PedidoResponse:
+def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int, forma_pagamento: str | None = None) -> PedidoResponse:
     if novo_status not in _STATUS_VALIDOS:
         raise HTTPException(status_code=400, detail=f"Status inválido: {novo_status}")
 
@@ -115,6 +117,8 @@ def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int)
     pedido.status = novo_status
 
     if novo_status == "entregue":
+        if forma_pagamento:
+            pedido.forma_pagamento = forma_pagamento
         total = sum(float(item.valor_unit) * item.quantidade for item in pedido.itens)
 
         db.add(Lancamento(

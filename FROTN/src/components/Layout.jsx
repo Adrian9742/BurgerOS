@@ -11,6 +11,7 @@ const titulos = {
   "/clientes": { titulo: "Clientes", subtitulo: "Base de clientes cadastrados" },
   "/agenda": { titulo: "Agenda", subtitulo: "Compromissos e reservas" },
   "/perfil": { titulo: "Meu Perfil", subtitulo: "Dados da sua conta" },
+  "/sistema": { titulo: "Sistema", subtitulo: "Configurações e backup" },
 }
 
 export default function Layout() {

@@ -11,6 +11,7 @@ class Pedido(Base):
     cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
     mesa = Column(String(20), nullable=True)
     status = Column(String(20), default="aguardando", nullable=False)
+    forma_pagamento = Column(String(20), nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

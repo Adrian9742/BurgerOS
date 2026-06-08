@@ -11,8 +11,10 @@ export const pedidosService = {
     return data
   },
 
-  async mudarStatus(id, status) {
-    const { data } = await api.patch(`/api/pedidos/${id}/status`, { status })
+  async mudarStatus(id, status, forma_pagamento = null) {
+    const body = { status }
+    if (forma_pagamento) body.forma_pagamento = forma_pagamento
+    const { data } = await api.patch(`/api/pedidos/${id}/status`, body)
     return data
   },
 
