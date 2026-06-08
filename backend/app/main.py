@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
-from app.routers import auth, produtos, clientes, pedidos, lancamentos, dashboard, usuarios, configuracoes, agenda
+from app.routers import auth, produtos, clientes, pedidos, lancamentos, dashboard, usuarios, configuracoes, agenda, turnos
 from app.services.auth_service import seed_usuarios
 from app.services.produtos_service import seed_produtos
 from app.services.clientes_service import seed_clientes
@@ -42,6 +42,7 @@ app.include_router(dashboard.router)
 app.include_router(usuarios.router)
 app.include_router(configuracoes.router)
 app.include_router(agenda.router)
+app.include_router(turnos.router)
 
 
 @app.get("/api/health")

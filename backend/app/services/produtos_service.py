@@ -25,6 +25,20 @@ def listar(db: Session) -> list[Produto]:
     return db.query(Produto).order_by(Produto.categoria, Produto.nome).all()
 
 
+def listar_estoque_baixo(db: Session) -> list[Produto]:
+    return (
+        db.query(Produto)
+        .filter(
+            Produto.estoque.isnot(None),
+            Produto.estoque_minimo.isnot(None),
+            Produto.estoque <= Produto.estoque_minimo,
+            Produto.disponivel == True,
+        )
+        .order_by(Produto.estoque)
+        .all()
+    )
+
+
 def buscar(db: Session, produto_id: int) -> Produto:
     produto = db.query(Produto).filter(Produto.id == produto_id).first()
     if not produto:

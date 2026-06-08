@@ -24,4 +24,9 @@ export const produtosService = {
     const { data } = await api.patch(`/api/produtos/${id}/disponivel`)
     return data
   },
+
+  async listarEstoqueBaixo() {
+    const { data } = await api.get('/api/produtos/estoque-baixo')
+    return data
+  },
 }

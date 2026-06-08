@@ -15,6 +15,11 @@ def listar(db: Session = Depends(get_db), _: Usuario = Depends(get_current_user)
     return produtos_service.listar(db)
 
 
+@router.get("/estoque-baixo", response_model=list[ProdutoResponse])
+def estoque_baixo(db: Session = Depends(get_db), _: Usuario = Depends(get_current_user)):
+    return produtos_service.listar_estoque_baixo(db)
+
+
 @router.post("", response_model=ProdutoResponse, status_code=201)
 def criar(dados: ProdutoCreate, db: Session = Depends(get_db), _: Usuario = Depends(_ADMIN)):
     return produtos_service.criar(db, dados)

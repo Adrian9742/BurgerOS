@@ -12,4 +12,6 @@ class Produto(Base):
     categoria = Column(String(50), nullable=False)
     valor = Column(Numeric(10, 2), nullable=False)
     disponivel = Column(Boolean, default=True, nullable=False)
+    estoque = Column(Integer, nullable=True)          # null = não controla estoque
+    estoque_minimo = Column(Integer, nullable=True)   # alerta quando <= este valor
     criado_em = Column(DateTime(timezone=True), server_default=func.now())

@@ -107,6 +107,8 @@ def criar(db: Session, dados: PedidoCreate, usuario_id: int) -> PedidoResponse:
         produto = db.query(Produto).filter(Produto.id == item_dado.produto_id).first()
         if not produto:
             continue
+        if produto.estoque is not None:
+            produto.estoque -= item_dado.quantidade
         db.add(ItemPedido(
             pedido_id=pedido.id,
             produto_id=produto.id,

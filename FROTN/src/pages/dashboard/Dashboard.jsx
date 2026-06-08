@@ -3,10 +3,11 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts"
-import { TrendingUp, DollarSign, CheckCircle2, Target, Plus, Trash2, Pencil, Check, X } from "lucide-react"
+import { TrendingUp, DollarSign, CheckCircle2, Target, Plus, Trash2, Pencil, Check, X, AlertTriangle } from "lucide-react"
 import { formatarMoeda } from "../../utils/format.js"
 import { dashboardService } from "../../services/dashboardService.js"
 import configuracoesService from "../../services/configuracoesService.js"
+import { produtosService } from "../../services/produtosService.js"
 import { useAuth } from "../../context/AuthContext.jsx"
 import { useToast } from "../../context/ToastContext.jsx"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
@@ -138,6 +139,7 @@ export default function Dashboard() {
   const [metricas, setMetricas] = useState(_META_FALLBACK)
   const [metaDiaria, setMetaDiaria] = useState(1500)
   const [carregando, setCarregando] = useState(true)
+  const [estoqueBaixo, setEstoqueBaixo] = useState([])
   const [lembretes, setLembretes] = useState(() => {
     try { return JSON.parse(localStorage.getItem("burgeros_lembretes") || "[]") } catch { return [] }
   })
@@ -149,9 +151,11 @@ export default function Dashboard() {
     Promise.all([
       dashboardService.getMetricas(),
       configuracoesService.getMeta(),
-    ]).then(([m, cfg]) => {
+      produtosService.listarEstoqueBaixo(),
+    ]).then(([m, cfg, eb]) => {
       setMetricas(m)
       setMetaDiaria(cfg.valor)
+      setEstoqueBaixo(eb)
     }).catch(() => {}).finally(() => setCarregando(false))
 
   useEffect(() => { carregarDados() }, [])
@@ -218,6 +222,25 @@ export default function Dashboard() {
           isAdmin={isAdmin}
         />
       </div>
+
+      {estoqueBaixo.length > 0 && (
+        <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-400" />
+            <h2 className="text-sm font-bold text-texto">Estoque Baixo — {estoqueBaixo.length} produto{estoqueBaixo.length > 1 ? "s" : ""}</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {estoqueBaixo.map((p) => (
+              <div key={p.id} className="flex items-center gap-2 rounded-lg border border-yellow-500/20 bg-fundo px-3 py-1.5">
+                <span className="text-sm font-medium text-texto">{p.nome}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${p.estoque <= 0 ? "bg-status-cancelado/15 text-status-cancelado" : "bg-yellow-500/15 text-yellow-400"}`}>
+                  {p.estoque <= 0 ? "Zerado" : `${p.estoque} un`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 rounded-xl border border-borda bg-card p-6">

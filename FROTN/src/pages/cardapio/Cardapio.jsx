@@ -8,7 +8,22 @@ import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda } from "../../utils/format.js"
 import { produtosService } from "../../services/produtosService.js"
 
-const vazio = { nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "", disponivel: true }
+const vazio = { nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "", disponivel: true, estoque: "", estoque_minimo: "" }
+
+function BadgeEstoque({ estoque, minimo }) {
+  if (estoque == null) return <span className="text-xs text-texto-fraco">—</span>
+  const baixo = minimo != null && estoque <= minimo
+  const zerado = estoque <= 0
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+      zerado ? "bg-status-cancelado/15 text-status-cancelado" :
+      baixo  ? "bg-yellow-500/15 text-yellow-400" :
+               "bg-status-entregue/15 text-status-entregue"
+    }`}>
+      {zerado ? "Zerado" : baixo ? `${estoque} ⚠` : estoque}
+    </span>
+  )
+}
 
 export default function Cardapio() {
   const { mostrar } = useToast()
@@ -45,7 +60,7 @@ export default function Cardapio() {
 
   const abrirEdicao = (p) => {
     setEditando(p.id)
-    setForm({ ...p, valor: String(p.valor) })
+    setForm({ ...p, valor: String(p.valor), estoque: p.estoque ?? "", estoque_minimo: p.estoque_minimo ?? "" })
     setModalAberto(true)
   }
 
@@ -74,13 +89,19 @@ export default function Cardapio() {
     if (!form.nome.trim() || Number.isNaN(valorNum)) return mostrar("Preencha nome e valor", "erro")
 
     setSalvando(true)
+    const payload = {
+      ...form,
+      valor: valorNum,
+      estoque: form.estoque === "" ? null : Number(form.estoque),
+      estoque_minimo: form.estoque_minimo === "" ? null : Number(form.estoque_minimo),
+    }
     try {
       if (editando) {
-        const atualizado = await produtosService.atualizar(editando, { ...form, valor: valorNum })
+        const atualizado = await produtosService.atualizar(editando, payload)
         setProdutos((ps) => ps.map((p) => (p.id === editando ? atualizado : p)))
         mostrar("Produto atualizado", "sucesso")
       } else {
-        const novo = await produtosService.criar({ ...form, valor: valorNum })
+        const novo = await produtosService.criar(payload)
         setProdutos((ps) => [...ps, novo])
         mostrar("Produto adicionado", "sucesso")
       }
@@ -126,6 +147,7 @@ export default function Cardapio() {
               <th className="px-5 py-3 font-semibold">Nome</th>
               <th className="px-5 py-3 font-semibold">Categoria</th>
               <th className="px-5 py-3 font-semibold">Valor</th>
+              <th className="px-5 py-3 font-semibold">Estoque</th>
               <th className="px-5 py-3 font-semibold">Disponível</th>
               <th className="px-5 py-3 text-right font-semibold">Ações</th>
             </tr>
@@ -146,6 +168,9 @@ export default function Cardapio() {
                 </td>
                 <td className="px-5 py-3.5 text-texto-suave">{p.categoria}</td>
                 <td className="px-5 py-3.5 font-bold text-texto">{formatarMoeda(p.valor)}</td>
+                <td className="px-5 py-3.5">
+                  <BadgeEstoque estoque={p.estoque} minimo={p.estoque_minimo} />
+                </td>
                 <td className="px-5 py-3.5">
                   <Toggle ativo={p.disponivel} aoMudar={() => alternarDisponivel(p.id)} />
                 </td>
@@ -205,6 +230,24 @@ export default function Cardapio() {
               value={form.valor}
               onChange={(e) => setForm({ ...form, valor: e.target.value })}
               placeholder="0,00"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Campo
+              rotulo="Estoque atual"
+              type="number"
+              min="0"
+              value={form.estoque}
+              onChange={(e) => setForm({ ...form, estoque: e.target.value })}
+              placeholder="Deixe vazio p/ não controlar"
+            />
+            <Campo
+              rotulo="Alerta abaixo de"
+              type="number"
+              min="0"
+              value={form.estoque_minimo}
+              onChange={(e) => setForm({ ...form, estoque_minimo: e.target.value })}
+              placeholder="Ex: 5"
             />
           </div>
           <div className="flex items-center justify-between rounded-lg border border-borda bg-fundo px-4 py-3">

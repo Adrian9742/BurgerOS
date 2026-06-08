@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Plus, ArrowUpCircle, ArrowDownCircle, Wallet, CalendarDays } from "lucide-react"
+import { Plus, ArrowUpCircle, ArrowDownCircle, Wallet, CalendarDays, Download } from "lucide-react"
 import Modal from "../../components/Modal.jsx"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
 import { Campo, Botao } from "../../components/Form.jsx"
@@ -41,6 +41,31 @@ export default function Caixa() {
     const intervalo = setInterval(carregar, 15000)
     return () => clearInterval(intervalo)
   }, [carregar])
+
+  const exportarCSV = () => {
+    const cab = ["Data", "Hora", "Tipo", "Descrição", "Valor"].join(",")
+    const linhas = lancamentos.map((l) => [
+      dataInicio,
+      l.hora,
+      l.tipo === "entrada" ? "Entrada" : "Saída",
+      `"${String(l.descricao).replace(/"/g, '""')}"`,
+      l.tipo === "entrada" ? l.valor.toFixed(2) : `-${l.valor.toFixed(2)}`,
+    ].join(","))
+    const rodape = [
+      "",
+      `,,,"Total Entradas",${totalEntradas.toFixed(2)}`,
+      `,,,"Total Saídas",${totalSaidas.toFixed(2)}`,
+      `,,,"Saldo",${saldo.toFixed(2)}`,
+    ]
+    const csv = [cab, ...linhas, ...rodape].join("\n")
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `burgeros-${dataInicio}-a-${dataFim}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const totalEntradas = lancamentos.filter((l) => l.tipo === "entrada").reduce((s, l) => s + l.valor, 0)
   const totalSaidas = lancamentos.filter((l) => l.tipo === "saida").reduce((s, l) => s + l.valor, 0)
@@ -84,11 +109,21 @@ export default function Caixa() {
             </p>
           </div>
         </div>
-        <Botao onClick={() => setModalAberto(true)}>
-          <span className="flex items-center gap-1.5">
-            <Plus className="h-4 w-4" /> Novo Lançamento
-          </span>
-        </Botao>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={exportarCSV}
+            disabled={lancamentos.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-borda px-4 py-2 text-sm font-semibold text-texto-suave transition-colors hover:border-laranja/50 hover:text-laranja disabled:opacity-40"
+          >
+            <Download className="h-4 w-4" />
+            Exportar CSV
+          </button>
+          <Botao onClick={() => setModalAberto(true)}>
+            <span className="flex items-center gap-1.5">
+              <Plus className="h-4 w-4" /> Novo Lançamento
+            </span>
+          </Botao>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 rounded-xl border border-borda bg-card px-5 py-4">

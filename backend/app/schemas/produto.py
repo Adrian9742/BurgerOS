@@ -17,6 +17,8 @@ class ProdutoCreate(BaseModel):
     categoria: CategoriaEnum
     valor: Decimal
     disponivel: bool = True
+    estoque: Optional[int] = None
+    estoque_minimo: Optional[int] = None
 
     @field_validator("valor")
     @classmethod
@@ -32,6 +34,8 @@ class ProdutoUpdate(BaseModel):
     categoria: Optional[CategoriaEnum] = None
     valor: Optional[Decimal] = None
     disponivel: Optional[bool] = None
+    estoque: Optional[int] = None
+    estoque_minimo: Optional[int] = None
 
 
 class ProdutoResponse(BaseModel):
@@ -41,5 +45,7 @@ class ProdutoResponse(BaseModel):
     categoria: str
     valor: float
     disponivel: bool
+    estoque: Optional[int] = None
+    estoque_minimo: Optional[int] = None
 
     model_config = {"from_attributes": True}

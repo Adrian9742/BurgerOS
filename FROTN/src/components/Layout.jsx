@@ -12,6 +12,7 @@ const titulos = {
   "/agenda": { titulo: "Agenda", subtitulo: "Compromissos e reservas" },
   "/perfil": { titulo: "Meu Perfil", subtitulo: "Dados da sua conta" },
   "/sistema": { titulo: "Sistema", subtitulo: "Configurações e backup" },
+  "/turno": { titulo: "Fechamento de Caixa", subtitulo: "Controle de turnos e fechamento do dia" },
 }
 
 export default function Layout() {
