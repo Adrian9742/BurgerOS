@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, X, Settings2 } from "lucide-react"
 import { CATEGORIAS } from "../../utils/constants.js"
 import Modal from "../../components/Modal.jsx"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
@@ -8,7 +8,10 @@ import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda } from "../../utils/format.js"
 import { produtosService } from "../../services/produtosService.js"
 
-const vazio = { nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "", disponivel: true, estoque: "", estoque_minimo: "" }
+const vazio = {
+  nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "",
+  disponivel: true, estoque: "", estoque_minimo: "", variacoes: [],
+}
 
 function BadgeEstoque({ estoque, minimo }) {
   if (estoque == null) return <span className="text-xs text-texto-fraco">—</span>
@@ -22,6 +25,109 @@ function BadgeEstoque({ estoque, minimo }) {
     }`}>
       {zerado ? "Zerado" : baixo ? `${estoque} ⚠` : estoque}
     </span>
+  )
+}
+
+function EditorVariacoes({ variacoes, onChange }) {
+  const [novaOpcao, setNovaOpcao] = useState({})
+
+  const adicionarGrupo = () =>
+    onChange([...variacoes, { nome: "", opcoes: [] }])
+
+  const removerGrupo = (idx) =>
+    onChange(variacoes.filter((_, i) => i !== idx))
+
+  const mudarNomeGrupo = (idx, nome) =>
+    onChange(variacoes.map((v, i) => (i === idx ? { ...v, nome } : v)))
+
+  const adicionarOpcao = (idx) => {
+    const texto = (novaOpcao[idx] || "").trim()
+    if (!texto) return
+    onChange(variacoes.map((v, i) => (i === idx ? { ...v, opcoes: [...v.opcoes, texto] } : v)))
+    setNovaOpcao((p) => ({ ...p, [idx]: "" }))
+  }
+
+  const removerOpcao = (gIdx, oIdx) =>
+    onChange(variacoes.map((v, i) => (i === gIdx ? { ...v, opcoes: v.opcoes.filter((_, j) => j !== oIdx) } : v)))
+
+  const onKey = (e, idx) => {
+    if (e.key === "Enter") { e.preventDefault(); adicionarOpcao(idx) }
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border border-borda bg-fundo p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Settings2 className="h-4 w-4 text-texto-suave" />
+          <span className="text-sm font-semibold text-texto">Variações</span>
+          <span className="text-xs text-texto-fraco">(ex: ponto da carne, tamanho)</span>
+        </div>
+        <button
+          type="button"
+          onClick={adicionarGrupo}
+          className="flex items-center gap-1 rounded-lg border border-borda bg-card px-3 py-1.5 text-xs font-medium text-texto-suave transition-colors hover:border-laranja/50 hover:text-laranja"
+        >
+          <Plus className="h-3.5 w-3.5" /> Grupo
+        </button>
+      </div>
+
+      {variacoes.length === 0 && (
+        <p className="py-2 text-center text-xs text-texto-fraco">
+          Nenhuma variação — clique em "+ Grupo" para adicionar
+        </p>
+      )}
+
+      {variacoes.map((grupo, gIdx) => (
+        <div key={gIdx} className="rounded-lg border border-borda bg-card p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <input
+              value={grupo.nome}
+              onChange={(e) => mudarNomeGrupo(gIdx, e.target.value)}
+              placeholder="Nome do grupo (ex: Ponto da carne)"
+              className="flex-1 rounded-lg border border-borda bg-fundo px-3 py-1.5 text-sm text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => removerGrupo(gIdx)}
+              className="rounded-lg p-1.5 text-texto-fraco transition-colors hover:bg-fundo hover:text-status-cancelado"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {grupo.opcoes.map((op, oIdx) => (
+              <span
+                key={oIdx}
+                className="flex items-center gap-1 rounded-full border border-laranja/30 bg-laranja/10 px-2.5 py-1 text-xs font-medium text-laranja"
+              >
+                {op}
+                <button type="button" onClick={() => removerOpcao(gIdx, oIdx)} className="hover:text-status-cancelado">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+
+            <div className="flex items-center gap-1">
+              <input
+                value={novaOpcao[gIdx] || ""}
+                onChange={(e) => setNovaOpcao((p) => ({ ...p, [gIdx]: e.target.value }))}
+                onKeyDown={(e) => onKey(e, gIdx)}
+                placeholder="Nova opção..."
+                className="w-28 rounded-full border border-dashed border-borda bg-fundo px-2.5 py-1 text-xs text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => adicionarOpcao(gIdx)}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-laranja/10 text-laranja transition-colors hover:bg-laranja/20"
+              >
+                <Plus className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -46,9 +152,7 @@ export default function Cardapio() {
     }
   }, [mostrar])
 
-  useEffect(() => {
-    carregar()
-  }, [carregar])
+  useEffect(() => { carregar() }, [carregar])
 
   const filtrados = filtro === "Todas" ? produtos : produtos.filter((p) => p.categoria === filtro)
 
@@ -60,7 +164,13 @@ export default function Cardapio() {
 
   const abrirEdicao = (p) => {
     setEditando(p.id)
-    setForm({ ...p, valor: String(p.valor), estoque: p.estoque ?? "", estoque_minimo: p.estoque_minimo ?? "" })
+    setForm({
+      ...p,
+      valor: String(p.valor),
+      estoque: p.estoque ?? "",
+      estoque_minimo: p.estoque_minimo ?? "",
+      variacoes: p.variacoes || [],
+    })
     setModalAberto(true)
   }
 
@@ -88,12 +198,16 @@ export default function Cardapio() {
     const valorNum = Number.parseFloat(form.valor)
     if (!form.nome.trim() || Number.isNaN(valorNum)) return mostrar("Preencha nome e valor", "erro")
 
+    const variacoesLimpas = (form.variacoes || [])
+      .filter((v) => v.nome.trim() && v.opcoes.length > 0)
+
     setSalvando(true)
     const payload = {
       ...form,
       valor: valorNum,
       estoque: form.estoque === "" ? null : Number(form.estoque),
       estoque_minimo: form.estoque_minimo === "" ? null : Number(form.estoque_minimo),
+      variacoes: variacoesLimpas.length > 0 ? variacoesLimpas : null,
     }
     try {
       if (editando) {
@@ -148,6 +262,7 @@ export default function Cardapio() {
               <th className="px-5 py-3 font-semibold">Categoria</th>
               <th className="px-5 py-3 font-semibold">Valor</th>
               <th className="px-5 py-3 font-semibold">Estoque</th>
+              <th className="px-5 py-3 font-semibold">Variações</th>
               <th className="px-5 py-3 font-semibold">Disponível</th>
               <th className="px-5 py-3 text-right font-semibold">Ações</th>
             </tr>
@@ -155,7 +270,7 @@ export default function Cardapio() {
           <tbody>
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-texto-fraco">
+                <td colSpan={7} className="px-5 py-8 text-center text-texto-fraco">
                   Nenhum produto encontrado
                 </td>
               </tr>
@@ -170,6 +285,16 @@ export default function Cardapio() {
                 <td className="px-5 py-3.5 font-bold text-texto">{formatarMoeda(p.valor)}</td>
                 <td className="px-5 py-3.5">
                   <BadgeEstoque estoque={p.estoque} minimo={p.estoque_minimo} />
+                </td>
+                <td className="px-5 py-3.5">
+                  {p.variacoes && p.variacoes.length > 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-laranja/10 px-2.5 py-0.5 text-xs font-medium text-laranja">
+                      <Settings2 className="h-3 w-3" />
+                      {p.variacoes.length} grupo{p.variacoes.length > 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-texto-fraco">—</span>
+                  )}
                 </td>
                 <td className="px-5 py-3.5">
                   <Toggle ativo={p.disponivel} aoMudar={() => alternarDisponivel(p.id)} />
@@ -218,9 +343,7 @@ export default function Cardapio() {
               onChange={(e) => setForm({ ...form, categoria: e.target.value })}
             >
               {CATEGORIAS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+                <option key={c} value={c}>{c}</option>
               ))}
             </Selecao>
             <Campo
@@ -250,6 +373,12 @@ export default function Cardapio() {
               placeholder="Ex: 5"
             />
           </div>
+
+          <EditorVariacoes
+            variacoes={form.variacoes || []}
+            onChange={(v) => setForm({ ...form, variacoes: v })}
+          />
+
           <div className="flex items-center justify-between rounded-lg border border-borda bg-fundo px-4 py-3">
             <span className="text-sm font-medium text-texto">Produto ativo</span>
             <Toggle ativo={form.disponivel} aoMudar={(v) => setForm({ ...form, disponivel: v })} />

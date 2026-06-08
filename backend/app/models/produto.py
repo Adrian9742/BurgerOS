@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Numeric, Boolean, DateTime, JSON
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -12,6 +12,7 @@ class Produto(Base):
     categoria = Column(String(50), nullable=False)
     valor = Column(Numeric(10, 2), nullable=False)
     disponivel = Column(Boolean, default=True, nullable=False)
-    estoque = Column(Integer, nullable=True)          # null = não controla estoque
-    estoque_minimo = Column(Integer, nullable=True)   # alerta quando <= este valor
+    estoque = Column(Integer, nullable=True)
+    estoque_minimo = Column(Integer, nullable=True)
+    variacoes = Column(JSON, nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())

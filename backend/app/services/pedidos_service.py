@@ -72,14 +72,18 @@ def listar(db: Session) -> list[PedidoResponse]:
     return [_to_response(p) for p in pedidos]
 
 
-def listar_concluidos(db: Session) -> list[PedidoResponse]:
-    pedidos = (
-        db.query(Pedido)
-        .filter(Pedido.status.in_(["entregue", "cancelado"]))
-        .order_by(Pedido.criado_em.desc())
-        .limit(100)
-        .all()
-    )
+def listar_concluidos(
+    db: Session,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+) -> list[PedidoResponse]:
+    from sqlalchemy import func as sqlfunc
+    q = db.query(Pedido).filter(Pedido.status.in_(["entregue", "cancelado"]))
+    if data_inicio:
+        q = q.filter(sqlfunc.date(Pedido.criado_em) >= data_inicio)
+    if data_fim:
+        q = q.filter(sqlfunc.date(Pedido.criado_em) <= data_fim)
+    pedidos = q.order_by(Pedido.criado_em.desc()).limit(200).all()
     return [_to_response(p) for p in pedidos]
 
 

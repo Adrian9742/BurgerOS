@@ -24,6 +24,7 @@ class LancamentoCreate(BaseModel):
 
 class LancamentoResponse(BaseModel):
     id: int
+    data: str
     hora: str
     descricao: str
     tipo: str

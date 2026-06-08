@@ -6,10 +6,10 @@ from app.schemas.lancamento import LancamentoCreate, LancamentoResponse
 
 
 def _to_response(lancamento: Lancamento) -> LancamentoResponse:
-    hora = lancamento.criado_em.strftime("%H:%M")
     return LancamentoResponse(
         id=lancamento.id,
-        hora=hora,
+        data=lancamento.criado_em.strftime("%Y-%m-%d"),
+        hora=lancamento.criado_em.strftime("%H:%M"),
         descricao=lancamento.descricao,
         tipo=lancamento.tipo,
         valor=float(lancamento.valor),
@@ -28,6 +28,15 @@ def listar(db: Session, data_inicio: date | None = None, data_fim: date | None =
         .all()
     )
     return [_to_response(l) for l in lancamentos]
+
+
+def deletar(db: Session, lancamento_id: int) -> None:
+    lancamento = db.query(Lancamento).filter(Lancamento.id == lancamento_id).first()
+    if not lancamento:
+        from fastapi import HTTPException, status
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lançamento não encontrado")
+    db.delete(lancamento)
+    db.commit()
 
 
 def criar(db: Session, dados: LancamentoCreate, usuario_id: int) -> LancamentoResponse:

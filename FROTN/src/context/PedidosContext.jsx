@@ -62,6 +62,12 @@ export function PedidosProvider({ children }) {
     return () => clearInterval(intervalo)
   }, [carregar])
 
+  useEffect(() => {
+    const count = pedidos.length
+    document.title = count > 0 ? `(${count}) BurgerOS` : "BurgerOS"
+    localStorage.setItem("burgeros_pedidos_ativos", String(count))
+  }, [pedidos.length])
+
   const adicionarPedido = async (dados) => {
     const novo = await pedidosService.criar(dados)
     setPedidos((atual) => [novo, ...atual])

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Optional, Any
 from enum import Enum
 from decimal import Decimal
 
@@ -19,6 +19,7 @@ class ProdutoCreate(BaseModel):
     disponivel: bool = True
     estoque: Optional[int] = None
     estoque_minimo: Optional[int] = None
+    variacoes: Optional[list[dict[str, Any]]] = None
 
     @field_validator("valor")
     @classmethod
@@ -36,6 +37,7 @@ class ProdutoUpdate(BaseModel):
     disponivel: Optional[bool] = None
     estoque: Optional[int] = None
     estoque_minimo: Optional[int] = None
+    variacoes: Optional[list[dict[str, Any]]] = None
 
 
 class ProdutoResponse(BaseModel):
@@ -47,5 +49,6 @@ class ProdutoResponse(BaseModel):
     disponivel: bool
     estoque: Optional[int] = None
     estoque_minimo: Optional[int] = None
+    variacoes: Optional[list[dict[str, Any]]] = None
 
     model_config = {"from_attributes": True}

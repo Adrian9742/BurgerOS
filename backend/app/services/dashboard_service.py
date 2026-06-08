@@ -2,7 +2,8 @@ from datetime import date, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.models.lancamento import Lancamento
-from app.models.pedido import Pedido
+from app.models.pedido import Pedido, ItemPedido
+from app.models.produto import Produto
 from app.services.configuracoes_service import get_valor
 
 _DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
@@ -61,3 +62,35 @@ def get_metricas(db: Session) -> dict:
         "metaAtingida": meta_atingida,
         "totalMeta": _META_SEMANAL,
     }
+
+
+def get_top_produtos(db: Session, limite: int = 8) -> list[dict]:
+    hoje = date.today()
+    inicio_semana = hoje - timedelta(days=6)
+
+    resultados = (
+        db.query(
+            Produto.nome,
+            func.sum(ItemPedido.quantidade).label("total_qtd"),
+            func.sum(ItemPedido.quantidade * ItemPedido.valor_unit).label("total_valor"),
+        )
+        .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .join(Pedido, Pedido.id == ItemPedido.pedido_id)
+        .filter(
+            Pedido.status == "entregue",
+            func.date(Pedido.criado_em) >= inicio_semana,
+        )
+        .group_by(Produto.id, Produto.nome)
+        .order_by(func.sum(ItemPedido.quantidade).desc())
+        .limit(limite)
+        .all()
+    )
+
+    return [
+        {
+            "nome": r.nome,
+            "quantidade": int(r.total_qtd),
+            "receita": round(float(r.total_valor), 2),
+        }
+        for r in resultados
+    ]

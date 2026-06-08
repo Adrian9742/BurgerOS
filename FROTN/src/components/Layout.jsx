@@ -13,6 +13,7 @@ const titulos = {
   "/perfil": { titulo: "Meu Perfil", subtitulo: "Dados da sua conta" },
   "/sistema": { titulo: "Sistema", subtitulo: "Configurações e backup" },
   "/turno": { titulo: "Fechamento de Caixa", subtitulo: "Controle de turnos e fechamento do dia" },
+  "/mesas": { titulo: "Mapa de Mesas", subtitulo: "Visão geral das mesas e ocupação" },
 }
 
 export default function Layout() {

@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
-import { Volume2, VolumeX, HardDrive, RefreshCw, CheckCircle, AlertCircle, Trash2, TriangleAlert } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Volume2, VolumeX, HardDrive, RefreshCw, CheckCircle, AlertCircle, Trash2, TriangleAlert, Clock } from "lucide-react"
+import { TEMPO_ALERTA_MINUTOS } from "../../utils/constants.js"
 import { useToast } from "../../context/ToastContext.jsx"
 import { useAuth } from "../../context/AuthContext.jsx"
 import { pedidosService } from "../../services/pedidosService.js"
@@ -21,10 +22,16 @@ export default function Sistema() {
   const { mostrar } = useToast()
   const { usuario } = useAuth()
   const [somAtivado, setSomAtivado] = useState(localStorage.getItem("burgeros_som") !== "false")
+  const [alertaMin, setAlertaMin] = useState(
+    Number(localStorage.getItem("burgeros_alerta_min") || TEMPO_ALERTA_MINUTOS)
+  )
+  const [alertaTemp, setAlertaTemp] = useState("")
+  const [editandoAlerta, setEditandoAlerta] = useState(false)
   const [backups, setBackups] = useState([])
   const [fazendoBackup, setFazendoBackup] = useState(false)
   const [resetando, setResetando] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
+  const alertaRef = useRef(null)
   const temElectron = typeof window.burgeros !== "undefined"
   const isProprietario = usuario?.cargo === "Proprietário"
 
@@ -37,6 +44,27 @@ export default function Sistema() {
       const lista = await window.burgeros.backup.listar()
       setBackups(lista)
     } catch {}
+  }
+
+  const abrirEditAlerta = () => {
+    setAlertaTemp(String(alertaMin))
+    setEditandoAlerta(true)
+    setTimeout(() => alertaRef.current?.select(), 50)
+  }
+
+  const salvarAlerta = () => {
+    const v = Number(alertaTemp)
+    if (v >= 1 && v <= 120) {
+      setAlertaMin(v)
+      localStorage.setItem("burgeros_alerta_min", String(v))
+      mostrar(`Alerta configurado para ${v} minutos`, "sucesso")
+    }
+    setEditandoAlerta(false)
+  }
+
+  const onKeyAlerta = (e) => {
+    if (e.key === "Enter") salvarAlerta()
+    if (e.key === "Escape") setEditandoAlerta(false)
   }
 
   const toggleSom = () => {
@@ -105,6 +133,41 @@ export default function Sistema() {
           {somAtivado ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
           {somAtivado ? "Som ativado — clique para desativar" : "Som desativado — clique para ativar"}
         </button>
+      </div>
+
+      {/* Tempo de alerta */}
+      <div className="rounded-xl border border-borda bg-card p-6">
+        <h2 className="mb-1 text-base font-bold text-texto">Tempo de Alerta de Pedido</h2>
+        <p className="mb-5 text-sm text-texto-suave">
+          Pedidos na fila ficam em vermelho após este tempo sem avançar de status.
+        </p>
+        <div className="flex items-center gap-4">
+          <Clock className="h-5 w-5 text-texto-fraco" />
+          {editandoAlerta ? (
+            <div className="flex items-center gap-2">
+              <input
+                ref={alertaRef}
+                type="number"
+                min="1"
+                max="120"
+                value={alertaTemp}
+                onChange={(e) => setAlertaTemp(e.target.value)}
+                onKeyDown={onKeyAlerta}
+                onBlur={salvarAlerta}
+                className="w-20 rounded-lg border border-laranja bg-fundo px-3 py-2 text-sm font-bold text-texto focus:outline-none"
+              />
+              <span className="text-sm text-texto-suave">minutos</span>
+            </div>
+          ) : (
+            <button
+              onClick={abrirEditAlerta}
+              className="flex items-center gap-3 rounded-xl border border-borda bg-fundo px-5 py-3 text-sm transition-colors hover:border-laranja/40"
+            >
+              <span className="text-2xl font-black text-laranja">{alertaMin}</span>
+              <span className="text-texto-suave">minutos — clique para alterar</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Backup */}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
-import { useNavigate } from "react-router-dom"
-import { Search, Plus, Minus, Trash2, ShoppingCart, ArrowLeft, User, MapPin, UserPlus, X, Loader2, Check } from "lucide-react"
+import { useNavigate, useLocation } from "react-router-dom"
+import { Search, Plus, Minus, Trash2, ShoppingCart, ArrowLeft, User, MapPin, UserPlus, X, Loader2, Settings2, Check } from "lucide-react"
 import { CATEGORIAS } from "../../utils/constants.js"
 import { produtosService } from "../../services/produtosService.js"
 import { clientesService } from "../../services/clientesService.js"
@@ -62,8 +62,86 @@ function ModalNovoClienteRapido({ nomeInicial, onCriado, onFechar }) {
   )
 }
 
+function ModalVariacoes({ produto, onAdicionar, onFechar }) {
+  const [selecionadas, setSelecionadas] = useState({})
+
+  const selecionar = (nomeGrupo, opcao) =>
+    setSelecionadas((s) => ({ ...s, [nomeGrupo]: opcao }))
+
+  const confirmar = () => {
+    const grupos = produto.variacoes || []
+    const partes = grupos
+      .map((g) => (selecionadas[g.nome] ? `${g.nome}: ${selecionadas[g.nome]}` : null))
+      .filter(Boolean)
+    onAdicionar(produto, partes.join(" · "))
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onFechar}>
+      <div className="w-full max-w-sm rounded-2xl border border-borda bg-card p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-texto">{produto.nome}</h2>
+            <p className="text-xs text-texto-fraco">Escolha as opções</p>
+          </div>
+          <button onClick={onFechar} className="text-texto-fraco hover:text-texto"><X className="h-4 w-4" /></button>
+        </div>
+
+        <div className="space-y-4">
+          {(produto.variacoes || []).map((grupo) => (
+            <div key={grupo.nome}>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-texto-suave">
+                {grupo.nome}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {grupo.opcoes.map((opcao) => {
+                  const sel = selecionadas[grupo.nome] === opcao
+                  return (
+                    <button
+                      key={opcao}
+                      type="button"
+                      onClick={() => selecionar(grupo.nome, opcao)}
+                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                        sel
+                          ? "border-laranja bg-laranja/15 text-laranja"
+                          : "border-borda bg-fundo text-texto-suave hover:border-laranja/50 hover:text-texto"
+                      }`}
+                    >
+                      {sel && <Check className="h-3 w-3" />}
+                      {opcao}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex gap-2">
+          <button
+            type="button"
+            onClick={onFechar}
+            className="flex-1 rounded-lg border border-borda py-2.5 text-sm text-texto-suave hover:bg-fundo"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={confirmar}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-laranja py-2.5 text-sm font-bold text-fundo hover:bg-laranja-hover"
+          >
+            <Plus className="h-4 w-4" />
+            Adicionar ao carrinho
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function NovoPedido() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { adicionarPedido } = usePedidos()
   const { mostrar } = useToast()
 
@@ -71,22 +149,24 @@ export default function NovoPedido() {
   const [clientes, setClientes] = useState([])
   const [carregando, setCarregando] = useState(true)
 
-  const [modoCliente, setModoCliente] = useState("cliente")
+  const mesaInicial = location.state?.mesa ? String(location.state.mesa) : ""
+  const [modoCliente, setModoCliente] = useState(mesaInicial ? "mesa" : "cliente")
   const [buscaCliente, setBuscaCliente] = useState("")
   const [clienteSel, setClienteSel] = useState(null)
   const [dropdownAberto, setDropdownAberto] = useState(false)
   const [modalNovoCliente, setModalNovoCliente] = useState(false)
-  const [mesa, setMesa] = useState("")
+  const [mesa, setMesa] = useState(mesaInicial)
   const [carrinho, setCarrinho] = useState([])
   const [confirmando, setConfirmando] = useState(false)
+  const [modalVariacoes, setModalVariacoes] = useState(null)
   const inputClienteRef = useRef(null)
+  const itemKeyRef = useRef(0)
+
+  const gerarKey = () => String(++itemKeyRef.current)
 
   useEffect(() => {
     Promise.all([produtosService.listar(), clientesService.listar()])
-      .then(([prods, clts]) => {
-        setProdutos(prods)
-        setClientes(clts)
-      })
+      .then(([prods, clts]) => { setProdutos(prods); setClientes(clts) })
       .catch(() => mostrar("Erro ao carregar dados", "erro"))
       .finally(() => setCarregando(false))
   }, [mostrar])
@@ -117,21 +197,34 @@ export default function NovoPedido() {
     setModalNovoCliente(false)
   }
 
-  const adicionarItem = (produto) => {
+  const adicionarItemSimples = (produto) => {
     setCarrinho((c) => {
-      const existe = c.find((i) => i.produto.id === produto.id)
-      if (existe) return c.map((i) => (i.produto.id === produto.id ? { ...i, qtd: i.qtd + 1 } : i))
-      return [...c, { produto, qtd: 1, obs: "" }]
+      const existe = c.find((i) => i.key === String(produto.id))
+      if (existe) return c.map((i) => (i.key === String(produto.id) ? { ...i, qtd: i.qtd + 1 } : i))
+      return [...c, { key: String(produto.id), produto, qtd: 1, obs: "" }]
     })
   }
 
-  const mudarQtd = (id, delta) =>
-    setCarrinho((c) => c.map((i) => (i.produto.id === id ? { ...i, qtd: i.qtd + delta } : i)).filter((i) => i.qtd > 0))
+  const adicionarItemComVariacoes = (produto, obs) => {
+    setCarrinho((c) => [...c, { key: gerarKey(), produto, qtd: 1, obs }])
+    setModalVariacoes(null)
+  }
 
-  const mudarObs = (id, obs) =>
-    setCarrinho((c) => c.map((i) => (i.produto.id === id ? { ...i, obs } : i)))
+  const clicarProduto = (produto) => {
+    if (produto.variacoes && produto.variacoes.length > 0) {
+      setModalVariacoes(produto)
+    } else {
+      adicionarItemSimples(produto)
+    }
+  }
 
-  const removerItem = (id) => setCarrinho((c) => c.filter((i) => i.produto.id !== id))
+  const mudarQtd = (key, delta) =>
+    setCarrinho((c) => c.map((i) => (i.key === key ? { ...i, qtd: i.qtd + delta } : i)).filter((i) => i.qtd > 0))
+
+  const mudarObs = (key, obs) =>
+    setCarrinho((c) => c.map((i) => (i.key === key ? { ...i, obs } : i)))
+
+  const removerItem = (key) => setCarrinho((c) => c.filter((i) => i.key !== key))
 
   const total = carrinho.reduce((s, i) => s + i.produto.valor * i.qtd, 0)
 
@@ -275,10 +368,15 @@ export default function NovoPedido() {
                   {itensCat.map((p) => (
                     <button
                       key={p.id}
-                      onClick={() => adicionarItem(p)}
+                      onClick={() => clicarProduto(p)}
                       className="group flex flex-col rounded-xl border border-borda bg-card p-4 text-left transition-colors hover:border-laranja/50"
                     >
-                      <span className="text-sm font-semibold text-texto">{p.nome}</span>
+                      <div className="flex items-start justify-between gap-1">
+                        <span className="text-sm font-semibold text-texto">{p.nome}</span>
+                        {p.variacoes && p.variacoes.length > 0 && (
+                          <Settings2 className="h-3.5 w-3.5 shrink-0 text-laranja/60" />
+                        )}
+                      </div>
                       <span className="mt-1 line-clamp-2 text-xs text-texto-fraco">{p.descricao}</span>
                       <span className="mt-3 flex items-center justify-between">
                         <span className="text-sm font-bold text-laranja">{formatarMoeda(p.valor)}</span>
@@ -310,20 +408,20 @@ export default function NovoPedido() {
           ) : (
             <ul className="space-y-4">
               {carrinho.map((i) => (
-                <li key={i.produto.id} className="rounded-lg border border-borda bg-fundo p-3">
+                <li key={i.key} className="rounded-lg border border-borda bg-fundo p-3">
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-sm font-semibold text-texto">{i.produto.nome}</span>
-                    <button onClick={() => removerItem(i.produto.id)} className="text-texto-fraco hover:text-status-cancelado">
+                    <button onClick={() => removerItem(i.key)} className="text-texto-fraco hover:text-status-cancelado">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => mudarQtd(i.produto.id, -1)} className="flex h-6 w-6 items-center justify-center rounded bg-card text-texto-suave hover:text-texto">
+                      <button onClick={() => mudarQtd(i.key, -1)} className="flex h-6 w-6 items-center justify-center rounded bg-card text-texto-suave hover:text-texto">
                         <Minus className="h-3.5 w-3.5" />
                       </button>
                       <span className="w-5 text-center text-sm font-bold text-texto">{i.qtd}</span>
-                      <button onClick={() => mudarQtd(i.produto.id, 1)} className="flex h-6 w-6 items-center justify-center rounded bg-card text-texto-suave hover:text-texto">
+                      <button onClick={() => mudarQtd(i.key, 1)} className="flex h-6 w-6 items-center justify-center rounded bg-card text-texto-suave hover:text-texto">
                         <Plus className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -331,7 +429,7 @@ export default function NovoPedido() {
                   </div>
                   <input
                     value={i.obs}
-                    onChange={(e) => mudarObs(i.produto.id, e.target.value)}
+                    onChange={(e) => mudarObs(i.key, e.target.value)}
                     placeholder="Observação..."
                     className="mt-2 w-full rounded border border-borda bg-card px-2 py-1.5 text-xs text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
                   />
@@ -361,6 +459,14 @@ export default function NovoPedido() {
           nomeInicial={buscaCliente}
           onCriado={clienteCriado}
           onFechar={() => setModalNovoCliente(false)}
+        />
+      )}
+
+      {modalVariacoes && (
+        <ModalVariacoes
+          produto={modalVariacoes}
+          onAdicionar={adicionarItemComVariacoes}
+          onFechar={() => setModalVariacoes(null)}
         />
       )}
     </div>

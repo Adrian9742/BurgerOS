@@ -23,8 +23,8 @@ export const pedidosService = {
     return data
   },
 
-  async listarConcluidos() {
-    const { data } = await api.get('/api/pedidos?concluidos=true')
+  async listarConcluidos(params = {}) {
+    const { data } = await api.get('/api/pedidos', { params: { concluidos: true, ...params } })
     return data
   },
 

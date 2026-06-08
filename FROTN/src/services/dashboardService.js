@@ -5,4 +5,9 @@ export const dashboardService = {
     const { data } = await api.get('/api/dashboard')
     return data
   },
+
+  async topProdutos() {
+    const { data } = await api.get('/api/dashboard/top-produtos')
+    return data
+  },
 }

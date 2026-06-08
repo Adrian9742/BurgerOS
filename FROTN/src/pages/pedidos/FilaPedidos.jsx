@@ -3,13 +3,13 @@ import { useNavigate } from "react-router-dom"
 import {
   Plus, Clock, User, MapPin, ChevronRight, AlertTriangle,
   Printer, XCircle, CreditCard, Banknote, QrCode, HandCoins,
-  CheckCircle2, Trash2, RefreshCw,
+  CheckCircle2, Trash2, RefreshCw, CalendarDays,
 } from "lucide-react"
 import { usePedidos } from "../../context/PedidosContext.jsx"
 import { useAuth } from "../../context/AuthContext.jsx"
 import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda, formatarCronometro, minutosDesde } from "../../utils/format.js"
-import { TEMPO_ALERTA_MINUTOS } from "../../utils/constants.js"
+import { TEMPO_ALERTA_MINUTOS as _ALERTA_DEFAULT } from "../../utils/constants.js"
 import { pedidosService } from "../../services/pedidosService.js"
 import { imprimirNotinha } from "../../utils/notinha.js"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
@@ -72,8 +72,9 @@ function CardAtivo({ pedido, proximo, onAvancar, onCancelar }) {
   const [atualizando, setAtualizando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [modalPagamento, setModalPagamento] = useState(false)
+  const tempoAlerta = Number(localStorage.getItem("burgeros_alerta_min") || _ALERTA_DEFAULT)
   const minutos = minutosDesde(pedido.abertoEm)
-  const atrasado = minutos >= TEMPO_ALERTA_MINUTOS
+  const atrasado = minutos >= tempoAlerta
 
   const handleAvancar = async () => {
     if (atualizando) return
@@ -223,16 +224,18 @@ export default function FilaPedidos() {
   const [aba, setAba] = useState("fila")
   const [concluidos, setConcluidos] = useState([])
   const [carregandoConcluidos, setCarregandoConcluidos] = useState(false)
+  const [dataInicio, setDataInicio] = useState(() => new Date().toISOString().slice(0, 10))
+  const [dataFim, setDataFim] = useState(() => new Date().toISOString().slice(0, 10))
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(id)
   }, [])
 
-  const carregarConcluidos = useCallback(async () => {
+  const carregarConcluidos = useCallback(async (inicio, fim) => {
     setCarregandoConcluidos(true)
     try {
-      const data = await pedidosService.listarConcluidos()
+      const data = await pedidosService.listarConcluidos({ data_inicio: inicio, data_fim: fim })
       setConcluidos(data)
     } catch {
       mostrar("Erro ao carregar pedidos concluídos", "erro")
@@ -242,8 +245,8 @@ export default function FilaPedidos() {
   }, [mostrar])
 
   useEffect(() => {
-    if (aba === "concluidos") carregarConcluidos()
-  }, [aba, carregarConcluidos])
+    if (aba === "concluidos") carregarConcluidos(dataInicio, dataFim)
+  }, [aba, dataInicio, dataFim, carregarConcluidos])
 
   const handleAvancar = async (id, status, formaPagamento = null) => {
     try {
@@ -340,12 +343,42 @@ export default function FilaPedidos() {
       {/* aba concluídos — grid */}
       {aba === "concluidos" && (
         <div>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-texto-suave">
-              Últimos 100 pedidos entregues e cancelados.
-            </p>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <CalendarDays className="h-4 w-4 text-texto-fraco" />
+            <input
+              type="date"
+              value={dataInicio}
+              max={dataFim}
+              onChange={(e) => setDataInicio(e.target.value)}
+              className="rounded-lg border border-borda bg-card px-3 py-1.5 text-sm text-texto focus:border-laranja focus:outline-none"
+            />
+            <span className="text-sm text-texto-fraco">até</span>
+            <input
+              type="date"
+              value={dataFim}
+              min={dataInicio}
+              onChange={(e) => setDataFim(e.target.value)}
+              className="rounded-lg border border-borda bg-card px-3 py-1.5 text-sm text-texto focus:border-laranja focus:outline-none"
+            />
             <button
-              onClick={carregarConcluidos}
+              onClick={() => {
+                const hoje = new Date().toISOString().slice(0, 10)
+                setDataInicio(hoje)
+                setDataFim(hoje)
+              }}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                dataInicio === new Date().toISOString().slice(0, 10) && dataFim === new Date().toISOString().slice(0, 10)
+                  ? "border-laranja bg-laranja/10 text-laranja"
+                  : "border-borda text-texto-suave hover:border-laranja/40 hover:text-texto"
+              }`}
+            >
+              Hoje
+            </button>
+            <span className="ml-auto text-sm text-texto-suave">
+              {concluidos.length} pedido{concluidos.length !== 1 ? "s" : ""}
+            </span>
+            <button
+              onClick={() => carregarConcluidos(dataInicio, dataFim)}
               disabled={carregandoConcluidos}
               className="flex items-center gap-1.5 rounded-lg border border-borda px-3 py-1.5 text-xs text-texto-suave transition-colors hover:text-texto disabled:opacity-50"
             >

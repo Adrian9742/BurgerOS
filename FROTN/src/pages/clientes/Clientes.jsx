@@ -143,7 +143,10 @@ export default function Clientes() {
     try { setHistorico(await clientesService.historico(cliente.id)) } catch {}
   }, [])
 
-  const filtrados = clientes.filter((c) => c.nome.toLowerCase().includes(busca.toLowerCase()))
+  const filtrados = clientes.filter((c) =>
+    c.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    (c.telefone || "").includes(busca)
+  )
 
   const handleDeletar = async (cliente) => {
     if (!confirm(`Excluir cliente "${cliente.nome}"? Esta ação não pode ser desfeita.`)) return

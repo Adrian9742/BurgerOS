@@ -14,4 +14,13 @@ export const financeiroService = {
     const { data } = await api.post('/api/financeiro/lancamentos', lancamento)
     return data
   },
+
+  async deletar(id) {
+    await api.delete(`/api/financeiro/lancamentos/${id}`)
+  },
+
+  async pagamentos(params = {}) {
+    const { data } = await api.get('/api/financeiro/pagamentos', { params })
+    return data
+  },
 }

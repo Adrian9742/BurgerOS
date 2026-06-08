@@ -187,6 +187,29 @@ function criarJanela() {
     },
   })
 
+  win.on("close", async (event) => {
+    let count = 0
+    try {
+      count = await win.webContents.executeJavaScript(
+        'parseInt(localStorage.getItem("burgeros_pedidos_ativos") || "0")'
+      )
+    } catch {}
+
+    if (count > 0) {
+      event.preventDefault()
+      const { response } = await dialog.showMessageBox(win, {
+        type: "warning",
+        buttons: ["Fechar mesmo assim", "Cancelar"],
+        defaultId: 1,
+        cancelId: 1,
+        title: "Pedidos ativos na fila",
+        message: `Há ${count} pedido${count > 1 ? "s" : ""} em andamento!`,
+        detail: "Fechar o BurgerOS agora vai interromper o atendimento. Tem certeza?",
+      })
+      if (response === 0) win.destroy()
+    }
+  })
+
   if (isDev) {
     win.loadURL("http://localhost:5173")
     win.webContents.openDevTools()

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react"
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings, Lock } from "lucide-react"
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings, Lock, MapPin } from "lucide-react"
+import { usePedidos } from "../context/PedidosContext.jsx"
 
 const itens = [
   { rota: "/", rotulo: "Dashboard", icone: LayoutDashboard, fim: true },
   { rota: "/pedidos", rotulo: "Pedidos", icone: ClipboardList },
+  { rota: "/mesas", rotulo: "Mapa de Mesas", icone: MapPin },
   { rota: "/cardapio", rotulo: "Cardápio", icone: UtensilsCrossed },
   { rota: "/financeiro", rotulo: "Financeiro", icone: Wallet },
   { rota: "/turno", rotulo: "Caixa/Turno", icone: Lock },
@@ -34,6 +36,9 @@ function RelogioAoVivo() {
 }
 
 export default function Sidebar() {
+  const { pedidos } = usePedidos()
+  const ativos = pedidos.length
+
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-borda bg-card">
       <div className="flex items-center gap-3 border-b border-borda px-6 py-5">
@@ -66,7 +71,12 @@ export default function Sidebar() {
               <>
                 {isActive && <span className="absolute left-0 h-6 w-1 rounded-r-full bg-laranja" />}
                 <Icone className="h-5 w-5" />
-                <span>{rotulo}</span>
+                <span className="flex-1">{rotulo}</span>
+                {rota === "/pedidos" && ativos > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-laranja px-1.5 text-[10px] font-bold text-fundo">
+                    {ativos}
+                  </span>
+                )}
               </>
             )}
           </NavLink>

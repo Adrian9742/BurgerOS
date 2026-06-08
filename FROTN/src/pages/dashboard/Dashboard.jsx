@@ -3,7 +3,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts"
-import { TrendingUp, DollarSign, CheckCircle2, Target, Plus, Trash2, Pencil, Check, X, AlertTriangle } from "lucide-react"
+import { TrendingUp, DollarSign, CheckCircle2, Target, Plus, Trash2, Pencil, Check, X, AlertTriangle, Trophy } from "lucide-react"
 import { formatarMoeda } from "../../utils/format.js"
 import { dashboardService } from "../../services/dashboardService.js"
 import configuracoesService from "../../services/configuracoesService.js"
@@ -140,6 +140,7 @@ export default function Dashboard() {
   const [metaDiaria, setMetaDiaria] = useState(1500)
   const [carregando, setCarregando] = useState(true)
   const [estoqueBaixo, setEstoqueBaixo] = useState([])
+  const [topProdutos, setTopProdutos] = useState([])
   const [lembretes, setLembretes] = useState(() => {
     try { return JSON.parse(localStorage.getItem("burgeros_lembretes") || "[]") } catch { return [] }
   })
@@ -152,10 +153,12 @@ export default function Dashboard() {
       dashboardService.getMetricas(),
       configuracoesService.getMeta(),
       produtosService.listarEstoqueBaixo(),
-    ]).then(([m, cfg, eb]) => {
+      dashboardService.topProdutos(),
+    ]).then(([m, cfg, eb, tp]) => {
       setMetricas(m)
       setMetaDiaria(cfg.valor)
       setEstoqueBaixo(eb)
+      setTopProdutos(tp)
     }).catch(() => {}).finally(() => setCarregando(false))
 
   useEffect(() => { carregarDados() }, [])
@@ -238,6 +241,38 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {topProdutos.length > 0 && (
+        <div className="rounded-xl border border-borda bg-card p-6">
+          <div className="mb-4 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-laranja" />
+            <h2 className="text-base font-bold text-texto">Top produtos — últimos 7 dias</h2>
+          </div>
+          <div className="space-y-3">
+            {topProdutos.map((p, i) => {
+              const max = topProdutos[0].quantidade
+              const pct = Math.round((p.quantidade / max) * 100)
+              return (
+                <div key={p.nome} className="flex items-center gap-3">
+                  <span className="w-5 text-right text-xs font-bold text-texto-fraco">{i + 1}</span>
+                  <div className="flex-1">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-sm font-medium text-texto">{p.nome}</span>
+                      <span className="text-xs text-texto-fraco">{p.quantidade} un · {formatarMoeda(p.receita)}</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-borda">
+                      <div
+                        className="h-full rounded-full bg-laranja transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

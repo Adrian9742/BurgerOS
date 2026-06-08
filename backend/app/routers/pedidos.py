@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from datetime import date
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.dependencies import get_db, get_current_user, requer_cargo
 from app.schemas.pedido import PedidoCreate, PedidoResponse, PedidoDetalhadoResponse, MudarStatusRequest
@@ -11,11 +13,13 @@ router = APIRouter(prefix="/api/pedidos", tags=["pedidos"])
 @router.get("", response_model=list[PedidoResponse])
 def listar(
     concluidos: bool = False,
+    data_inicio: Optional[date] = Query(None),
+    data_fim: Optional[date] = Query(None),
     db: Session = Depends(get_db),
     _: Usuario = Depends(get_current_user),
 ):
     if concluidos:
-        return pedidos_service.listar_concluidos(db)
+        return pedidos_service.listar_concluidos(db, data_inicio, data_fim)
     return pedidos_service.listar(db)
 
 
