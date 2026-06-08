@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Build outputs — não commitar binários
+FROTN/dist/
+FROTN/dist-electron/
+
+# Electron cache
+FROTN/.vite/
+
+# Env / segredos
+.env
+.env.local
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+backend.log

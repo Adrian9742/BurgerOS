@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fundo: #0f0f0f;
+  --color-card: #1a1a1a;
+  --color-card-hover: #222222;
+  --color-borda: #2a2a2a;
+  --color-laranja: #f97316;
+  --color-laranja-hover: #ea6a0c;
+  --color-texto: #f5f5f5;
+  --color-texto-suave: #a3a3a3;
+  --color-texto-fraco: #6b7280;
+
+  --color-status-aguardando: #6b7280;
+  --color-status-preparo: #eab308;
+  --color-status-pronto: #22c55e;
+  --color-status-entregue: #3b82f6;
+  --color-status-cancelado: #ef4444;
+
+  --color-positivo: #22c55e;
+  --color-negativo: #ef4444;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  border-color: var(--color-borda);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-fundo);
+  color: var(--color-texto);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Textura sutil de fundo */
+.textura-fundo {
+  background-image:
+    radial-gradient(circle at 25% 15%, rgba(249, 115, 22, 0.06), transparent 35%),
+    radial-gradient(circle at 80% 80%, rgba(249, 115, 22, 0.04), transparent 40%);
+}
+
+/* Scrollbar escura */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.animate-slide-in {
+  animation: slide-in 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-scale-in {
+  animation: scale-in 0.18s ease-out;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin-slow {
+  animation: spin 0.8s linear infinite;
+}
