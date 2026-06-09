@@ -64,7 +64,11 @@ def atualizar(db: Session, produto_id: int, dados: ProdutoUpdate) -> Produto:
 
 
 def remover(db: Session, produto_id: int) -> None:
+    from app.models.pedido import ItemPedido
     produto = buscar(db, produto_id)
+    db.query(ItemPedido).filter(ItemPedido.produto_id == produto_id).update(
+        {"produto_id": None}, synchronize_session=False
+    )
     db.delete(produto)
     db.commit()
 

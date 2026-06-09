@@ -71,7 +71,9 @@ function ModalPagamento({ pedido, onConfirmar, onFechar }) {
 
 // ── Card na fila ativa ───────────────────────────────────────────────────────
 function CardAtivo({ pedido, proxinoBase, onAvancar, onCancelar }) {
-  const proximo = proxinoBase === "entregue" && pedido.tipo === "delivery" ? "a_caminho" : proxinoBase
+  const proximo = proxinoBase === "entregue" && pedido.tipo === "delivery" && pedido.status !== "a_caminho"
+    ? "a_caminho"
+    : proxinoBase
   const [atualizando, setAtualizando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
   const [modalPagamento, setModalPagamento] = useState(false)
