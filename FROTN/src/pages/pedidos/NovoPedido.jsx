@@ -242,6 +242,8 @@ export default function NovoPedido() {
     if (carrinho.length === 0) return mostrar("Adicione ao menos um item", "erro")
     if (modoCliente === "cliente" && !clienteSel) return mostrar("Selecione um cliente", "erro")
     if (modoCliente === "mesa" && !mesa.trim()) return mostrar("Informe o número da mesa", "erro")
+    if (tipoPedido === "delivery" && !enderecoEntrega.trim()) return mostrar("Informe o endereço de entrega", "erro")
+    if (descontoNum > 0 && descontoTipo === "percentual" && descontoNum > 100) return mostrar("Desconto percentual não pode ultrapassar 100%", "erro")
 
     setConfirmando(true)
     try {

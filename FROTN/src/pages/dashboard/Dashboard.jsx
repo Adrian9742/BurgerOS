@@ -150,19 +150,19 @@ export default function Dashboard() {
   const isAdmin = usuario?.cargo === "Proprietário"
 
   const carregarDados = () =>
-    Promise.all([
+    Promise.allSettled([
       dashboardService.getMetricas(),
       configuracoesService.getMeta(),
       produtosService.listarEstoqueBaixo(),
       dashboardService.topProdutos(),
       dashboardService.faturamentoHoras(),
     ]).then(([m, cfg, eb, tp, fh]) => {
-      setMetricas(m)
-      setMetaDiaria(cfg.valor)
-      setEstoqueBaixo(eb)
-      setTopProdutos(tp)
-      setFaturamentoHoras(fh)
-    }).catch(() => {}).finally(() => setCarregando(false))
+      if (m.status === "fulfilled") setMetricas(m.value)
+      if (cfg.status === "fulfilled") setMetaDiaria(cfg.value.valor)
+      if (eb.status === "fulfilled") setEstoqueBaixo(eb.value)
+      if (tp.status === "fulfilled") setTopProdutos(tp.value)
+      if (fh.status === "fulfilled") setFaturamentoHoras(fh.value)
+    }).finally(() => setCarregando(false))
 
   useEffect(() => { carregarDados() }, [])
 
@@ -318,7 +318,7 @@ export default function Dashboard() {
             <ComposedChart data={vendasSemana} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" vertical={false} />
               <XAxis dataKey="dia" stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `R$${v / 1000}k`} />
+              <YAxis stroke="#6b7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `R$${(v / 1000).toFixed(1)}k` : `R$${v}`} />
               <Tooltip content={<DicaGrafico />} cursor={{ fill: "rgba(249,115,22,0.08)" }} />
               <Bar dataKey="vendas" fill="#f97316" radius={[6, 6, 0, 0]} barSize={36} />
               <Line type="monotone" dataKey="meta" stroke="#3b82f6" strokeWidth={2.5} dot={{ r: 3, fill: "#3b82f6" }} activeDot={{ r: 5 }} />

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 
@@ -18,6 +18,20 @@ class PedidoCreate(BaseModel):
     endereco_entrega: Optional[str] = None
     taxa_entrega: float = 0.0
     itens: list[ItemPedidoCreate]
+
+    @field_validator("desconto")
+    @classmethod
+    def validar_desconto(cls, v):
+        if v is not None and v < 0:
+            raise ValueError("Desconto não pode ser negativo")
+        return v
+
+    @field_validator("desconto_tipo")
+    @classmethod
+    def validar_desconto_tipo(cls, v):
+        if v is not None and v not in ("percentual", "fixo"):
+            raise ValueError("desconto_tipo deve ser 'percentual' ou 'fixo'")
+        return v
 
 
 class MudarStatusRequest(BaseModel):
