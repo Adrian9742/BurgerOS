@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 class AbrirTurnoRequest(BaseModel):
+    caixa_inicial: float = 0
     observacao: Optional[str] = None
 
 
@@ -15,6 +16,7 @@ class TurnoResponse(BaseModel):
     id: int
     abertura: datetime
     fechamento: Optional[datetime] = None
+    caixa_inicial: float = 0
     total_entrada: float
     total_saida: float
     pedidos_entregues: int
@@ -25,6 +27,6 @@ class TurnoResponse(BaseModel):
     @computed_field
     @property
     def saldo(self) -> float:
-        return round(self.total_entrada - self.total_saida, 2)
+        return round(self.caixa_inicial + self.total_entrada - self.total_saida, 2)
 
     model_config = {"from_attributes": True}

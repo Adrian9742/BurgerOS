@@ -16,7 +16,7 @@ export function gerarHtmlNotinha(pedido) {
   const linhasItens = pedido.itens.map((item) => {
     const label = `${item.quantidade}x ${item.nome}`
     const truncated = label.length > 20 ? label.slice(0, 19) + "…" : label
-    return linha(truncated, R(item.subtotal))
+    return linha(truncated, R(item.valor_unit * item.quantidade))
   }).join("\n")
 
   const obsItens = pedido.itens
@@ -66,7 +66,7 @@ export function gerarHtmlNotinha(pedido) {
     : linha("TOTAL", R(totalFinal))
 
   const texto = `
-        B U R G E R O S
+         F L A M E O S
      Sistema de Gestão
 ${divisor}
 ${dataStr}  ${horaStr}
@@ -126,6 +126,91 @@ export async function imprimirNotinha(pedido) {
   const janela = window.open("", "_blank", "width=400,height=600,scrollbars=yes")
   if (!janela) {
     alert("Permita pop-ups para imprimir a notinha.")
+    return
+  }
+  janela.document.write(html)
+  janela.document.close()
+}
+
+// ── Comanda de cozinha ──────────────────────────────────────────────────────
+
+export function gerarHtmlComanda(pedido) {
+  const agora = new Date()
+  const horaStr = agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  const divisor = "━".repeat(28)
+  const divisorFino = "─".repeat(28)
+
+  const identificacao = pedido.cliente
+    ? `Cliente: ${pedido.cliente}`
+    : pedido.mesa
+    ? `Mesa: ${pedido.mesa}`
+    : "Balcão"
+
+  const tipoLabel = { delivery: "🛵 DELIVERY", balcao: "Balcão" }
+  const linhaTipo = tipoLabel[pedido.tipo] ? `\n${tipoLabel[pedido.tipo]}` : ""
+
+  const linhaEndereco = pedido.tipo === "delivery" && pedido.endereco_entrega
+    ? `\nEntrega: ${pedido.endereco_entrega}`
+    : ""
+
+  const linhasItens = pedido.itens.map((item) => {
+    const nome = item.nome
+    const qtd = item.quantidade
+    let bloco = `${qtd}x  ${nome}`
+    if (item.observacao) bloco += `\n   ↳ ${item.observacao}`
+    return bloco
+  }).join("\n")
+
+  const linhaObsPedido = pedido.observacao ? `\n${divisorFino}\nObs geral: ${pedido.observacao}` : ""
+
+  const texto = `${divisor}
+   C O M A N D A  #${pedido.id}
+${divisor}
+${horaStr}   ${identificacao}${linhaTipo}${linhaEndereco}
+${divisorFino}
+${linhasItens}${linhaObsPedido}
+${divisor}`.trim()
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Comanda #${pedido.id}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 15px;
+    line-height: 1.7;
+    background: #fff;
+    color: #000;
+    padding: 8px;
+    width: 80mm;
+  }
+  pre { white-space: pre-wrap; word-break: break-all; }
+  @media print {
+    @page { margin: 4mm; size: 80mm auto; }
+    body { width: 100%; padding: 0; }
+  }
+</style>
+</head>
+<body>
+<pre>${texto}</pre>
+<script>
+  window.onload = function() {
+    window.print();
+    setTimeout(() => window.close(), 500);
+  };
+</script>
+</body>
+</html>`
+}
+
+export async function imprimirComanda(pedido) {
+  const html = gerarHtmlComanda(pedido)
+  const janela = window.open("", "_blank", "width=400,height=500,scrollbars=yes")
+  if (!janela) {
+    alert("Permita pop-ups para imprimir a comanda.")
     return
   }
   janela.document.write(html)

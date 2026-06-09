@@ -65,12 +65,19 @@ class PedidoDetalhadoResponse(BaseModel):
     abertoEm: int
 
 
+class ItemResumoResponse(BaseModel):
+    nome: str
+    quantidade: int
+    valor_unit: float
+    observacao: Optional[str] = None
+
+
 class PedidoResponse(BaseModel):
     id: int
     cliente: Optional[str] = None
     mesa: Optional[str] = None
     tipo: str = "mesa"
-    itens: list[str]
+    itens: list[ItemResumoResponse]
     total: float
     total_final: float
     status: str

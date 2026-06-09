@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Plus, Pencil, Trash2, X, Settings2, Package } from "lucide-react"
+import { Plus, Pencil, Trash2, X, Settings2, Package, FlameKindling } from "lucide-react"
 import { CATEGORIAS } from "../../utils/constants.js"
 import Modal from "../../components/Modal.jsx"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
@@ -7,6 +7,7 @@ import { Campo, AreaTexto, Selecao, Botao, Toggle } from "../../components/Form.
 import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda } from "../../utils/format.js"
 import { produtosService } from "../../services/produtosService.js"
+import { ingredientesService } from "../../services/ingredientesService.js"
 
 const vazio = {
   nome: "", descricao: "", categoria: CATEGORIAS[0], valor: "",
@@ -127,6 +128,137 @@ function EditorVariacoes({ variacoes, onChange }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function EditorFichaTecnica({ produtoId, isCombo }) {
+  const { mostrar } = useToast()
+  const [ficha, setFicha] = useState([])
+  const [ingredientes, setIngredientes] = useState([])
+  const [ingSel, setIngSel] = useState("")
+  const [qtdSel, setQtdSel] = useState("")
+  const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    ingredientesService.listar().then(setIngredientes).catch(() => {})
+    if (produtoId) {
+      ingredientesService.getFicha(produtoId).then(setFicha).catch(() => {})
+    }
+  }, [produtoId])
+
+  if (isCombo) {
+    return (
+      <div className="rounded-xl border border-borda bg-fundo/50 p-4">
+        <div className="flex items-center gap-2">
+          <FlameKindling className="h-4 w-4 text-texto-fraco" />
+          <span className="text-sm font-semibold text-texto">Ficha Técnica</span>
+        </div>
+        <p className="mt-2 text-xs text-texto-fraco">
+          Combos usam a ficha técnica de cada produto componente. Edite os ingredientes nos produtos individuais.
+        </p>
+      </div>
+    )
+  }
+
+  const adicionar = () => {
+    const id = parseInt(ingSel)
+    const qtd = parseFloat(qtdSel)
+    if (!id || !qtd || qtd <= 0) return
+    if (ficha.find(f => f.ingrediente_id === id)) return
+    const ing = ingredientes.find(i => i.id === id)
+    setFicha(f => [...f, { ingrediente_id: id, nome: ing.nome, unidade: ing.unidade, quantidade: qtd }])
+    setIngSel("")
+    setQtdSel("")
+  }
+
+  const remover = (id) => setFicha(f => f.filter(x => x.ingrediente_id !== id))
+
+  const salvar = async () => {
+    if (!produtoId) return
+    setSalvando(true)
+    try {
+      const upd = await ingredientesService.salvarFicha(produtoId, ficha.map(f => ({ ingrediente_id: f.ingrediente_id, quantidade: f.quantidade })))
+      setFicha(upd)
+      mostrar("Ficha técnica salva", "sucesso")
+    } catch {
+      mostrar("Erro ao salvar ficha técnica", "erro")
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  const disponiveis = ingredientes.filter(i => !ficha.find(f => f.ingrediente_id === i.id))
+
+  return (
+    <div className="space-y-3 rounded-xl border border-laranja/20 bg-laranja/5 p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FlameKindling className="h-4 w-4 text-laranja" />
+          <span className="text-sm font-semibold text-texto">Ficha Técnica</span>
+          <span className="text-xs text-texto-fraco">(baixa automática ao entregar)</span>
+        </div>
+        {produtoId && ficha.length > 0 && (
+          <button
+            type="button"
+            onClick={salvar}
+            disabled={salvando}
+            className="rounded-lg border border-laranja/30 px-3 py-1 text-xs font-medium text-laranja hover:bg-laranja/10 disabled:opacity-50"
+          >
+            {salvando ? "Salvando..." : "Salvar ficha"}
+          </button>
+        )}
+      </div>
+
+      {ficha.length === 0 && (
+        <p className="py-1 text-center text-xs text-texto-fraco">Nenhum ingrediente — adicione abaixo</p>
+      )}
+
+      <ul className="space-y-1.5">
+        {ficha.map(f => (
+          <li key={f.ingrediente_id} className="flex items-center gap-2 rounded-lg border border-borda bg-card px-3 py-2">
+            <span className="flex-1 text-sm text-texto">{f.nome}</span>
+            <span className="text-xs text-texto-fraco">{f.quantidade} {f.unidade}</span>
+            <button type="button" onClick={() => remover(f.ingrediente_id)} className="text-texto-fraco hover:text-status-cancelado">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex gap-2">
+        <select
+          value={ingSel}
+          onChange={e => setIngSel(e.target.value)}
+          className="flex-1 rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto focus:border-laranja focus:outline-none"
+        >
+          <option value="">Selecionar ingrediente...</option>
+          {disponiveis.map(i => (
+            <option key={i.id} value={i.id}>{i.nome} ({i.unidade})</option>
+          ))}
+        </select>
+        <input
+          type="number"
+          min="0.001"
+          step="0.001"
+          value={qtdSel}
+          onChange={e => setQtdSel(e.target.value)}
+          placeholder="Qtd"
+          className="w-20 rounded-lg border border-borda bg-fundo px-2 py-2 text-sm text-texto focus:border-laranja focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={adicionar}
+          disabled={!ingSel || !qtdSel}
+          className="flex items-center gap-1 rounded-lg border border-laranja/30 bg-laranja/10 px-3 py-2 text-xs font-medium text-laranja transition-colors hover:bg-laranja/20 disabled:opacity-40"
+        >
+          <Plus className="h-3.5 w-3.5" /> Add
+        </button>
+      </div>
+
+      {!produtoId && ficha.length > 0 && (
+        <p className="text-xs text-texto-fraco">Salve o produto primeiro para gravar a ficha técnica.</p>
+      )}
     </div>
   )
 }
@@ -509,6 +641,11 @@ export default function Cardapio() {
             componentes={form.componentes || []}
             onChange={(v) => setForm({ ...form, componentes: v })}
             todosProdutos={produtos.filter((p) => p.id !== editando)}
+          />
+
+          <EditorFichaTecnica
+            produtoId={editando}
+            isCombo={(form.componentes || []).length > 0}
           />
 
           <div className="flex items-center justify-between rounded-lg border border-borda bg-fundo px-4 py-3">

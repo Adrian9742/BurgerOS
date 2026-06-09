@@ -13,7 +13,7 @@ const COLUNAS = [
 function CardKDS({ pedido, onAvancar }) {
   const [, setTick] = useState(0)
   const [atualizando, setAtualizando] = useState(false)
-  const tempoAlerta = Number(localStorage.getItem("burgeros_alerta_min") || _ALERTA_DEFAULT)
+  const tempoAlerta = Number(localStorage.getItem("flameos_alerta_min") || _ALERTA_DEFAULT)
   const minutos = minutosDesde(pedido.abertoEm)
   const atrasado = minutos >= tempoAlerta
 
@@ -55,11 +55,18 @@ function CardKDS({ pedido, onAvancar }) {
 
       <ul className="mb-4 space-y-2">
         {pedido.itens.map((item, i) => (
-          <li key={i} className="flex items-center gap-2 rounded-lg bg-fundo px-3 py-2.5">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-laranja/15 text-sm font-black text-laranja">
-              {item.split("x ")[0]}
-            </span>
-            <span className="text-base font-semibold text-texto">{item.split("x ").slice(1).join("x ")}</span>
+          <li key={i} className="rounded-lg bg-fundo px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-laranja/15 text-sm font-black text-laranja">
+                {item.quantidade}
+              </span>
+              <span className="text-base font-semibold text-texto">{item.nome}</span>
+            </div>
+            {item.observacao && (
+              <div className="mt-1.5 rounded border border-yellow-500/30 bg-yellow-500/10 px-2 py-1 text-sm font-medium text-yellow-300">
+                ↳ {item.observacao}
+              </div>
+            )}
           </li>
         ))}
       </ul>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { NavLink } from "react-router-dom"
-import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings, Lock, MapPin, ChefHat } from "lucide-react"
+import { LayoutDashboard, ClipboardList, UtensilsCrossed, Wallet, Users, Calendar, User, Settings, Lock, MapPin, ChefHat, FlameKindling } from "lucide-react"
 import { usePedidos } from "../context/PedidosContext.jsx"
 
 const itens = [
@@ -9,6 +9,7 @@ const itens = [
   { rota: "/cozinha", rotulo: "Cozinha (KDS)", icone: ChefHat },
   { rota: "/mesas", rotulo: "Mapa de Mesas", icone: MapPin },
   { rota: "/cardapio", rotulo: "Cardápio", icone: UtensilsCrossed },
+  { rota: "/ingredientes", rotulo: "Ingredientes", icone: FlameKindling },
   { rota: "/financeiro", rotulo: "Financeiro", icone: Wallet },
   { rota: "/turno", rotulo: "Caixa/Turno", icone: Lock },
   { rota: "/clientes", rotulo: "Clientes", icone: Users },
@@ -44,10 +45,10 @@ export default function Sidebar() {
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-borda bg-card">
       <div className="flex items-center gap-3 border-b border-borda px-6 py-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-laranja text-lg font-bold text-fundo">
-          B
+          F
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-bold text-texto">BurgerOS</p>
+          <p className="text-sm font-bold text-texto">FlameOS</p>
           <p className="text-xs text-texto-fraco">Gestão Hamburgueria</p>
         </div>
       </div>

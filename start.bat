@@ -2,7 +2,7 @@
 chcp 65001 > nul
 echo.
 echo  ==========================================
-echo   BurgerOS — Iniciando sistema...
+echo   FlameOS — Iniciando sistema...
 echo  ==========================================
 echo.
 
@@ -18,18 +18,18 @@ echo  PostgreSQL OK
 
 echo.
 echo [2/3] Subindo backend FastAPI...
-start "BurgerOS - Backend" cmd /k "cd /d %~dp0backend && uvicorn app.main:app --reload --port 8000"
+start "FlameOS - Backend" cmd /k "cd /d %~dp0backend && uvicorn app.main:app --reload --port 8000"
 
 echo  Aguardando backend iniciar...
 timeout /t 4 /nobreak > nul
 
 echo.
 echo [3/3] Subindo frontend...
-start "BurgerOS - Frontend" cmd /k "cd /d %~dp0FROTN && pnpm dev"
+start "FlameOS - Frontend" cmd /k "cd /d %~dp0FROTN && pnpm dev"
 
 echo.
 echo  ==========================================
-echo   BurgerOS iniciado!
+echo   FlameOS iniciado!
 echo   Backend : http://localhost:8000/docs
 echo   Frontend: http://localhost:5173
 echo  ==========================================

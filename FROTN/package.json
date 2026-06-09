@@ -1,8 +1,8 @@
 {
-  "name": "hamburgueria-gestao",
+  "name": "flameos",
   "version": "1.0.0",
   "description": "Sistema de gestão para hamburgueria",
-  "author": "BurgerOS",
+  "author": "FlameOS",
   "private": true,
   "type": "module",
   "scripts": {
@@ -36,9 +36,9 @@
   },
   "main": "electron/main.cjs",
   "build": {
-    "appId": "com.burgeros.app",
-    "productName": "BurgerOS",
-    "copyright": "Copyright © 2025 BurgerOS",
+    "appId": "com.flameos.app",
+    "productName": "FlameOS",
+    "copyright": "Copyright © 2025 FlameOS",
     "directories": {
       "output": "dist-electron"
     },
@@ -49,16 +49,9 @@
     ],
     "extraResources": [
       {
-        "from": "../backend",
+        "from": "../backend/dist/run",
         "to": "backend",
-        "filter": [
-          "**/*",
-          "!**/__pycache__/**",
-          "!**/*.pyc",
-          "!**/.venv/**",
-          "!**/venv/**",
-          "!**/.git/**"
-        ]
+        "filter": ["**/*"]
       }
     ],
     "win": {
@@ -75,7 +68,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "BurgerOS",
+      "shortcutName": "FlameOS",
       "installerHeaderIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh",

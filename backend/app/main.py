@@ -2,11 +2,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
-from app.routers import auth, produtos, clientes, pedidos, lancamentos, dashboard, usuarios, configuracoes, agenda, turnos
+from app.routers import auth, produtos, clientes, pedidos, lancamentos, dashboard, usuarios, configuracoes, agenda, turnos, ingredientes
 from app.services.auth_service import seed_usuarios
 from app.services.produtos_service import seed_produtos
 from app.services.clientes_service import seed_clientes
 from app.services.configuracoes_service import seed_configuracoes
+from app.services.ingredientes_service import seed_ingredientes
 
 
 @asynccontextmanager
@@ -18,12 +19,13 @@ async def lifespan(app: FastAPI):
         seed_produtos(db)
         seed_clientes(db)
         seed_configuracoes(db)
+        seed_ingredientes(db)
     finally:
         db.close()
     yield
 
 
-app = FastAPI(title="BurgerOS API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="FlameOS API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +45,7 @@ app.include_router(usuarios.router)
 app.include_router(configuracoes.router)
 app.include_router(agenda.router)
 app.include_router(turnos.router)
+app.include_router(ingredientes.router)
 
 
 @app.get("/api/health")

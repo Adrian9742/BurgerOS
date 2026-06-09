@@ -2,7 +2,7 @@
 chcp 65001 > nul
 echo.
 echo  ==========================================
-echo   BurgerOS — Build do instalador .exe
+echo   FlameOS — Build do instalador .exe
 echo  ==========================================
 echo.
 
@@ -67,7 +67,7 @@ if errorlevel 1 (
 
 echo.
 echo  ==========================================
-echo   Instalador: FROTN\dist-electron\BurgerOS Setup 1.0.0.exe
+echo   Instalador: FROTN\dist-electron\FlameOS Setup 1.0.0.exe
 echo  ==========================================
 echo.
 pause

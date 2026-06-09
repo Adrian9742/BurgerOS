@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Search, Plus, Minus, Trash2, ShoppingCart, ArrowLeft, User, MapPin, UserPlus, X, Loader2, Settings2, Check, Tag, Bike, Store, StickyNote } from "lucide-react"
+import { Search, Plus, Minus, Trash2, ShoppingCart, ArrowLeft, User, MapPin, UserPlus, X, Loader2, Settings2, Check, Tag, Bike, Store, StickyNote, Star, AlertTriangle } from "lucide-react"
 import { CATEGORIAS } from "../../utils/constants.js"
 import { produtosService } from "../../services/produtosService.js"
 import { clientesService } from "../../services/clientesService.js"
+import { ingredientesService } from "../../services/ingredientesService.js"
 import { usePedidos } from "../../context/PedidosContext.jsx"
 import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda } from "../../utils/format.js"
@@ -165,14 +166,23 @@ export default function NovoPedido() {
   const [carrinho, setCarrinho] = useState([])
   const [confirmando, setConfirmando] = useState(false)
   const [modalVariacoes, setModalVariacoes] = useState(null)
+  const [produtosCriticos, setProdutosCriticos] = useState(new Set())
   const inputClienteRef = useRef(null)
   const itemKeyRef = useRef(0)
 
   const gerarKey = () => String(++itemKeyRef.current)
 
   useEffect(() => {
-    Promise.all([produtosService.listar(), clientesService.listar()])
-      .then(([prods, clts]) => { setProdutos(prods); setClientes(clts) })
+    Promise.all([
+      produtosService.listar(),
+      clientesService.listar(),
+      ingredientesService.listarProdutosCriticos().catch(() => []),
+    ])
+      .then(([prods, clts, criticos]) => {
+        setProdutos(prods)
+        setClientes(clts)
+        setProdutosCriticos(new Set(criticos))
+      })
       .catch(() => mostrar("Erro ao carregar dados", "erro"))
       .finally(() => setCarregando(false))
   }, [mostrar])
@@ -188,9 +198,13 @@ export default function NovoPedido() {
     setClienteSel(c)
     setBuscaCliente(c.nome)
     setDropdownAberto(false)
+    if (c.observacao_padrao) setObservacao(c.observacao_padrao)
   }
 
   const limparCliente = () => {
+    if (clienteSel?.observacao_padrao && observacao === clienteSel.observacao_padrao) {
+      setObservacao("")
+    }
     setClienteSel(null)
     setBuscaCliente("")
     setDropdownAberto(false)
@@ -336,7 +350,12 @@ export default function NovoPedido() {
                     {clienteSel.nome.split(" ").slice(0, 2).map((p) => p[0]).join("")}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-texto">{clienteSel.nome}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-texto">
+                      {clienteSel.nome}
+                      {clienteSel.totalGasto >= 100 && (
+                        <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" title="Cliente VIP" />
+                      )}
+                    </p>
                     {clienteSel.telefone && <p className="text-xs text-texto-fraco">{clienteSel.telefone}</p>}
                   </div>
                   <button onClick={limparCliente} className="text-texto-fraco hover:text-texto">
@@ -367,8 +386,11 @@ export default function NovoPedido() {
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-laranja/15 text-xs font-bold text-laranja">
                             {c.nome[0]}
                           </div>
-                          <span className="font-medium text-texto">{c.nome}</span>
-                          {c.telefone && <span className="ml-auto text-xs text-texto-fraco">{c.telefone}</span>}
+                          <span className="flex flex-1 items-center gap-1.5 font-medium text-texto">
+                            {c.nome}
+                            {c.totalGasto >= 100 && <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />}
+                          </span>
+                          {c.telefone && <span className="text-xs text-texto-fraco">{c.telefone}</span>}
                         </button>
                       ))}
                       <button
@@ -486,8 +508,13 @@ export default function NovoPedido() {
                     <button
                       key={p.id}
                       onClick={() => clicarProduto(p)}
-                      className="group flex flex-col rounded-xl border border-borda bg-card p-4 text-left transition-colors hover:border-laranja/50"
+                      className={`group relative flex flex-col rounded-xl border bg-card p-4 text-left transition-colors hover:border-laranja/50 ${produtosCriticos.has(p.id) ? "border-status-cancelado/40" : "border-borda"}`}
                     >
+                      {produtosCriticos.has(p.id) && (
+                        <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-status-cancelado" title="Ingrediente em falta ou estoque crítico">
+                          <AlertTriangle className="h-3 w-3 text-white" />
+                        </span>
+                      )}
                       <div className="flex items-start justify-between gap-1">
                         <span className="text-sm font-semibold text-texto">{p.nome}</span>
                         {p.variacoes && p.variacoes.length > 0 && (

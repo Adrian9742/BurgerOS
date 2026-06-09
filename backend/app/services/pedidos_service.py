@@ -5,7 +5,7 @@ from app.models.pedido import Pedido, ItemPedido
 from app.models.produto import Produto
 from app.models.cliente import Cliente
 from app.models.lancamento import Lancamento
-from app.schemas.pedido import PedidoCreate, PedidoResponse, PedidoDetalhadoResponse, ItemDetalhadoResponse
+from app.schemas.pedido import PedidoCreate, PedidoResponse, PedidoDetalhadoResponse, ItemDetalhadoResponse, ItemResumoResponse
 
 _STATUS_VALIDOS = {"aguardando", "preparo", "pronto", "a_caminho", "entregue", "cancelado"}
 
@@ -21,11 +21,16 @@ def _calcular_total_final(total_itens: float, desconto, desconto_tipo, taxa_entr
 
 
 def _to_response(pedido: Pedido) -> PedidoResponse:
-    itens_str = []
+    itens_list = []
     total = 0.0
     for item in pedido.itens:
         nome = item.produto.nome if item.produto else "Produto removido"
-        itens_str.append(f"{item.quantidade}x {nome}")
+        itens_list.append(ItemResumoResponse(
+            nome=nome,
+            quantidade=item.quantidade,
+            valor_unit=float(item.valor_unit),
+            observacao=item.observacao,
+        ))
         total += float(item.valor_unit) * item.quantidade
 
     total = round(total, 2)
@@ -38,7 +43,7 @@ def _to_response(pedido: Pedido) -> PedidoResponse:
         cliente=cliente_nome,
         mesa=pedido.mesa,
         tipo=pedido.tipo or "mesa",
-        itens=itens_str,
+        itens=itens_list,
         total=total,
         total_final=total_final,
         status=pedido.status,
@@ -166,6 +171,39 @@ def criar(db: Session, dados: PedidoCreate, usuario_id: int) -> PedidoResponse:
     return _to_response(pedido)
 
 
+def _baixar_ingredientes(db: Session, pedido: Pedido) -> None:
+    from app.models.ingrediente import FichaTecnica, Ingrediente
+
+    # Mapeia produto_id → total de unidades a descontar
+    consumo: dict[int, float] = {}
+    for item in pedido.itens:
+        if not item.produto_id:
+            continue
+        produto = db.query(Produto).filter(Produto.id == item.produto_id).first()
+        if not produto:
+            continue
+        if produto.componentes:
+            # Combo: desconta pelas fichas de cada componente
+            for comp in produto.componentes:
+                cid = comp.get("produto_id")
+                cqtd = float(comp.get("quantidade", 1))
+                consumo[cid] = consumo.get(cid, 0) + cqtd * item.quantidade
+        else:
+            consumo[item.produto_id] = consumo.get(item.produto_id, 0) + item.quantidade
+
+    if not consumo:
+        return
+
+    fichas = db.query(FichaTecnica).filter(FichaTecnica.produto_id.in_(consumo.keys())).all()
+    for ficha in fichas:
+        qtd = consumo.get(ficha.produto_id, 0)
+        if qtd > 0:
+            db.query(Ingrediente).filter(Ingrediente.id == ficha.ingrediente_id).update(
+                {"estoque": Ingrediente.estoque - ficha.quantidade * qtd},
+                synchronize_session=False,
+            )
+
+
 def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int, forma_pagamento: str | None = None) -> PedidoResponse:
     if novo_status not in _STATUS_VALIDOS:
         raise HTTPException(status_code=400, detail=f"Status inválido: {novo_status}")
@@ -189,10 +227,12 @@ def mudar_status(db: Session, pedido_id: int, novo_status: str, usuario_id: int,
         ))
 
         if pedido.cliente_id:
-            cliente = db.query(Cliente).filter(Cliente.id == pedido.cliente_id).first()
-            if cliente:
-                cliente.total_gasto = float(cliente.total_gasto or 0) + total
-                cliente.ultimo_pedido = date.today()
+            db.query(Cliente).filter(Cliente.id == pedido.cliente_id).update(
+                {"total_gasto": Cliente.total_gasto + total, "ultimo_pedido": date.today()},
+                synchronize_session=False,
+            )
+
+        _baixar_ingredientes(db, pedido)
 
     db.commit()
     db.refresh(pedido)

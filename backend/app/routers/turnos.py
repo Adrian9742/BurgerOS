@@ -24,7 +24,7 @@ def abrir(
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_current_user),
 ):
-    return turnos_service.abrir(db, usuario_atual.id, dados.observacao)
+    return turnos_service.abrir(db, usuario_atual.id, dados.caixa_inicial, dados.observacao)
 
 
 @router.patch("/{turno_id}/fechar", response_model=TurnoResponse)

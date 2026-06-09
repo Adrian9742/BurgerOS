@@ -19,7 +19,7 @@ const titulos = {
 
 export default function Layout() {
   const { pathname } = useLocation()
-  const info = titulos[pathname] || { titulo: "BurgerOS", subtitulo: "" }
+  const info = titulos[pathname] || { titulo: "FlameOS", subtitulo: "" }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-fundo">

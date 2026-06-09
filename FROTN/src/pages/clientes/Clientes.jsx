@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from "react"
-import { Plus, Phone, X, Search, MapPin, Pencil, Loader2, Trash2 } from "lucide-react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { Plus, Phone, X, Search, MapPin, Pencil, Loader2, Trash2, Star, StickyNote } from "lucide-react"
 import Badge from "../../components/Badge.jsx"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
 import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda, formatarData } from "../../utils/format.js"
 import { clientesService } from "../../services/clientesService.js"
 
+const VIP_THRESHOLD = 100
+
 const FORM_VAZIO = {
-  nome: "", telefone: "",
+  nome: "", telefone: "", observacao_padrao: "",
   cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "",
 }
 
@@ -85,6 +87,20 @@ function FormCliente({ inicial, onSalvar, onFechar, titulo }) {
             </label>
           </div>
 
+          <label className="block">
+            <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-texto-suave">
+              <StickyNote className="h-3.5 w-3.5 text-laranja" />
+              Obs. permanente (aparece em todo novo pedido deste cliente)
+            </span>
+            <textarea
+              value={form.observacao_padrao || ""}
+              onChange={(e) => set("observacao_padrao", e.target.value)}
+              rows={2}
+              placeholder="Ex: alérgico a amendoim, mora no 3º andar sem elevador..."
+              className="w-full resize-none rounded-lg border border-borda bg-fundo px-3 py-2 text-sm text-texto placeholder:text-texto-fraco focus:border-laranja focus:outline-none"
+            />
+          </label>
+
           {(form.rua || form.cep) && (
             <div className="space-y-3 rounded-xl border border-borda bg-fundo/50 p-4">
               <p className="flex items-center gap-1.5 text-xs font-semibold text-texto-suave">
@@ -137,11 +153,18 @@ export default function Clientes() {
 
   useEffect(() => { carregar() }, [carregar])
 
+  const reqHistRef = useRef(0)
   const selecionarCliente = useCallback(async (cliente) => {
     setSelecionado(cliente)
     setHistorico([])
-    try { setHistorico(await clientesService.historico(cliente.id)) } catch {}
-  }, [])
+    const token = ++reqHistRef.current
+    try {
+      const h = await clientesService.historico(cliente.id)
+      if (reqHistRef.current === token) setHistorico(h)
+    } catch {
+      if (reqHistRef.current === token) mostrar("Erro ao carregar histórico", "erro")
+    }
+  }, [mostrar])
 
   const filtrados = clientes.filter((c) =>
     c.nome.toLowerCase().includes(busca.toLowerCase()) ||
@@ -224,7 +247,14 @@ export default function Clientes() {
                   onClick={() => selecionarCliente(c)}
                   className={`cursor-pointer border-b border-borda last:border-0 transition-colors hover:bg-card-hover ${selecionado?.id === c.id ? "bg-laranja/5" : ""}`}
                 >
-                  <td className="px-5 py-3.5 font-semibold text-texto">{c.nome}</td>
+                  <td className="px-5 py-3.5 font-semibold text-texto">
+                    <span className="flex items-center gap-1.5">
+                      {c.nome}
+                      {c.totalGasto >= VIP_THRESHOLD && (
+                        <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" title="Cliente VIP" />
+                      )}
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5 text-texto-suave">{c.telefone || "—"}</td>
                   <td className="px-5 py-3.5 text-texto-suave">
                     {c.cidade ? `${c.cidade}${c.estado ? ` / ${c.estado}` : ""}` : "—"}
@@ -246,7 +276,14 @@ export default function Clientes() {
                 {selecionado.nome.split(" ").slice(0, 2).map((p) => p[0]).join("")}
               </div>
               <div>
-                <p className="text-sm font-bold text-texto">{selecionado.nome}</p>
+                <p className="flex items-center gap-1.5 text-sm font-bold text-texto">
+                  {selecionado.nome}
+                  {selecionado.totalGasto >= VIP_THRESHOLD && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-400/15 px-1.5 py-0.5 text-xs font-semibold text-yellow-400">
+                      <Star className="h-3 w-3 fill-yellow-400" /> VIP
+                    </span>
+                  )}
+                </p>
                 {selecionado.telefone && (
                   <p className="flex items-center gap-1 text-xs text-texto-suave">
                     <Phone className="h-3 w-3" /> {selecionado.telefone}
@@ -291,6 +328,15 @@ export default function Clientes() {
               <p className="mt-1 text-base font-black text-texto">{historico.length}</p>
             </div>
           </div>
+
+          {selecionado.observacao_padrao && (
+            <div className="border-b border-borda px-5 py-3">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-texto-suave">
+                <StickyNote className="h-3 w-3 text-laranja" /> Obs. permanente
+              </p>
+              <p className="text-xs text-yellow-300">{selecionado.observacao_padrao}</p>
+            </div>
+          )}
 
           <div className="px-5 py-4">
             <h3 className="mb-3 text-sm font-bold text-texto">Histórico de pedidos</h3>

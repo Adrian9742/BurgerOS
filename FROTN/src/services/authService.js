@@ -1,6 +1,6 @@
 import api from './api'
 
-const TOKEN_KEY = 'burgeros_token'
+const TOKEN_KEY = 'flameos_token'
 
 export const authService = {
   async login(usuario, senha) {

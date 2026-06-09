@@ -18,4 +18,5 @@ class Cliente(Base):
     estado = Column(String(2), nullable=True)
     total_gasto = Column(Numeric(10, 2), default=0, nullable=False)
     ultimo_pedido = Column(Date, nullable=True)
+    observacao_padrao = Column(String(500), nullable=True)
     criado_em = Column(DateTime(timezone=True), server_default=func.now())

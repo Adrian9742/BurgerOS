@@ -11,8 +11,8 @@ export const turnosService = {
     return data
   },
 
-  async abrir(observacao = null) {
-    const { data } = await api.post('/api/turnos', { observacao })
+  async abrir(caixaInicial = 0, observacao = null) {
+    const { data } = await api.post('/api/turnos', { caixa_inicial: caixaInicial, observacao })
     return data
   },
 

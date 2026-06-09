@@ -127,7 +127,7 @@ function PopoverMesa({ numMesa, pedidos, onFechar, onNovoPedido }) {
 export default function Mesas() {
   const navigate = useNavigate()
   const { pedidos } = usePedidos()
-  const [totalMesas, setTotalMesas] = useState(() => Number(localStorage.getItem("burgeros_total_mesas") || "20"))
+  const [totalMesas, setTotalMesas] = useState(() => Number(localStorage.getItem("flameos_total_mesas") || "20"))
   const [editandoTotal, setEditandoTotal] = useState(false)
   const [totalTemp, setTotalTemp] = useState("")
   const [popover, setPopover] = useState(null)
@@ -160,7 +160,7 @@ export default function Mesas() {
     const v = Number(totalTemp)
     if (v >= 1 && v <= 200) {
       setTotalMesas(v)
-      localStorage.setItem("burgeros_total_mesas", String(v))
+      localStorage.setItem("flameos_total_mesas", String(v))
     }
     setEditandoTotal(false)
   }

@@ -3,7 +3,7 @@ set -e
 
 echo ""
 echo "=========================================="
-echo " BurgerOS — Iniciando sistema..."
+echo " FlameOS — Iniciando sistema..."
 echo "=========================================="
 echo ""
 
@@ -35,7 +35,7 @@ FRONTEND_PID=$!
 
 echo ""
 echo "=========================================="
-echo " BurgerOS iniciado!"
+echo " FlameOS iniciado!"
 echo " Backend : http://localhost:8000/docs"
 echo " Frontend: http://localhost:5173"
 echo "=========================================="

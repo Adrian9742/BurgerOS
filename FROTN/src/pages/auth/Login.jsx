@@ -32,7 +32,7 @@ export default function Login() {
           <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-laranja text-4xl font-black text-fundo shadow-lg shadow-laranja/20">
             B
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-texto">BurgerOS</h1>
+          <h1 className="text-2xl font-black tracking-tight text-texto">FlameOS</h1>
           <p className="mt-1 text-sm text-texto-suave">Sistema de Gestão · Hamburgueria</p>
         </div>
 

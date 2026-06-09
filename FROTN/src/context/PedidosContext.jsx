@@ -42,7 +42,7 @@ export function PedidosProvider({ children }) {
       if (idsConhecidos.current !== null) {
         const novos = data.filter((p) => !idsConhecidos.current.has(p.id))
         if (novos.length > 0) {
-          const somAtivado = localStorage.getItem("burgeros_som") !== "false"
+          const somAtivado = localStorage.getItem("flameos_som") !== "false"
           if (somAtivado) tocarAlerta()
         }
       }
@@ -64,8 +64,8 @@ export function PedidosProvider({ children }) {
 
   useEffect(() => {
     const count = pedidos.length
-    document.title = count > 0 ? `(${count}) BurgerOS` : "BurgerOS"
-    localStorage.setItem("burgeros_pedidos_ativos", String(count))
+    document.title = count > 0 ? `(${count}) FlameOS` : "FlameOS"
+    localStorage.setItem("flameos_pedidos_ativos", String(count))
   }, [pedidos.length])
 
   const adicionarPedido = async (dados) => {

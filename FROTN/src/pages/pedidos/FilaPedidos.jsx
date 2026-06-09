@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import {
   Plus, Clock, User, MapPin, ChevronRight, AlertTriangle,
   Printer, XCircle, CreditCard, Banknote, QrCode, HandCoins,
-  CheckCircle2, Trash2, RefreshCw, CalendarDays,
+  CheckCircle2, Trash2, RefreshCw, CalendarDays, RotateCcw,
 } from "lucide-react"
 import { usePedidos } from "../../context/PedidosContext.jsx"
 import { useAuth } from "../../context/AuthContext.jsx"
@@ -11,7 +11,7 @@ import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda, formatarCronometro, minutosDesde } from "../../utils/format.js"
 import { TEMPO_ALERTA_MINUTOS as _ALERTA_DEFAULT } from "../../utils/constants.js"
 import { pedidosService } from "../../services/pedidosService.js"
-import { imprimirNotinha } from "../../utils/notinha.js"
+import { imprimirNotinha, imprimirComanda } from "../../utils/notinha.js"
 import LoadingSpinner from "../../components/LoadingSpinner.jsx"
 
 const colunasAtivas = [
@@ -40,8 +40,8 @@ const labelFormaPagamento = { dinheiro: "Dinheiro", cartao: "Cartão", pix: "PIX
 // ── Modal de pagamento ───────────────────────────────────────────────────────
 function ModalPagamento({ pedido, onConfirmar, onFechar }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-borda bg-card p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onFechar}>
+      <div className="w-full max-w-sm rounded-2xl border border-borda bg-card p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="mb-1 text-lg font-bold text-texto">Forma de pagamento</h2>
         <p className="mb-5 text-sm text-texto-suave">
           Pedido #{pedido.id} — {formatarMoeda(pedido.total)}
@@ -76,8 +76,10 @@ function CardAtivo({ pedido, proxinoBase, onAvancar, onCancelar }) {
     : proxinoBase
   const [atualizando, setAtualizando] = useState(false)
   const [cancelando, setCancelando] = useState(false)
+  const [reabrindo, setReabrindo] = useState(false)
   const [modalPagamento, setModalPagamento] = useState(false)
-  const tempoAlerta = Number(localStorage.getItem("burgeros_alerta_min") || _ALERTA_DEFAULT)
+  const [imprimindoComanda, setImprimindoComanda] = useState(false)
+  const tempoAlerta = Number(localStorage.getItem("flameos_alerta_min") || _ALERTA_DEFAULT)
   const minutos = minutosDesde(pedido.abertoEm)
   const atrasado = minutos >= tempoAlerta
 
@@ -101,6 +103,13 @@ function CardAtivo({ pedido, proxinoBase, onAvancar, onCancelar }) {
     setCancelando(true)
     try { await onCancelar(pedido.id) }
     finally { setCancelando(false) }
+  }
+
+  const handleReabrir = async () => {
+    if (!confirm(`Reabrir pedido #${pedido.id} e enviar de volta para Preparo?`)) return
+    setReabrindo(true)
+    try { await onAvancar(pedido.id, "preparo") }
+    finally { setReabrindo(false) }
   }
 
   return (
@@ -133,8 +142,17 @@ function CardAtivo({ pedido, proxinoBase, onAvancar, onCancelar }) {
             )}
           </div>
         )}
-        <ul className="mt-2 space-y-0.5">
-          {pedido.itens.map((item, i) => <li key={i} className="text-xs text-texto-suave">{item}</li>)}
+        <ul className="mt-2 space-y-1">
+          {pedido.itens.map((item, i) => (
+            <li key={i} className="text-xs">
+              <span className="text-texto-suave">{item.quantidade}x {item.nome}</span>
+              {item.observacao && (
+                <span className="mt-0.5 block rounded bg-yellow-500/10 px-1.5 py-0.5 text-yellow-300">
+                  ↳ {item.observacao}
+                </span>
+              )}
+            </li>
+          ))}
         </ul>
         {pedido.observacao && (
           <div className="mt-2 rounded-lg bg-yellow-500/10 px-2.5 py-1.5 text-xs text-yellow-300">
@@ -142,8 +160,25 @@ function CardAtivo({ pedido, proxinoBase, onAvancar, onCancelar }) {
           </div>
         )}
         <div className="mt-3 flex items-center justify-between border-t border-borda pt-3">
-          <span className="text-sm font-bold text-texto">{formatarMoeda(pedido.total)}</span>
           <div className="flex items-center gap-1.5">
+            <span className="text-sm font-bold text-texto">{formatarMoeda(pedido.total)}</span>
+            <button
+              onClick={async () => { setImprimindoComanda(true); try { await imprimirComanda(pedido) } finally { setImprimindoComanda(false) } }}
+              disabled={imprimindoComanda}
+              title="Imprimir comanda de cozinha"
+              className="flex items-center gap-1 rounded-lg border border-borda px-2 py-1.5 text-xs text-texto-fraco transition-colors hover:border-laranja/50 hover:text-laranja disabled:opacity-50"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              {imprimindoComanda ? "..." : "Comanda"}
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {(pedido.status === "pronto" || pedido.status === "a_caminho") && (
+              <button onClick={handleReabrir} disabled={reabrindo} title="Enviar de volta para Preparo" className="flex items-center gap-1 rounded-lg border border-borda px-2 py-1.5 text-xs text-texto-fraco transition-colors hover:border-status-preparo/60 hover:text-status-preparo disabled:opacity-50">
+                <RotateCcw className="h-3.5 w-3.5" />
+                {reabrindo ? "..." : "Reabrir"}
+              </button>
+            )}
             <button onClick={handleCancelar} disabled={cancelando} className="flex items-center gap-1 rounded-lg border border-borda px-2 py-1.5 text-xs text-texto-fraco transition-colors hover:border-status-cancelado/50 hover:text-status-cancelado disabled:opacity-50">
               <XCircle className="h-3.5 w-3.5" />
               {cancelando ? "..." : "Cancelar"}
@@ -203,7 +238,12 @@ function CardConcluido({ pedido, podeDeletar, onDeletar }) {
       </div>
 
       <ul className="mt-1.5 space-y-0.5">
-        {pedido.itens.map((item, i) => <li key={i} className="text-xs text-texto-suave">{item}</li>)}
+        {pedido.itens.map((item, i) => (
+          <li key={i} className="text-xs text-texto-suave">
+            {item.quantidade}x {item.nome}
+            {item.observacao && <span className="ml-1 italic text-texto-fraco">({item.observacao})</span>}
+          </li>
+        ))}
       </ul>
 
       <div className="mt-3 flex items-center justify-between border-t border-borda pt-3">

@@ -6,6 +6,7 @@ import { Campo, Botao } from "../../components/Form.jsx"
 import { useToast } from "../../context/ToastContext.jsx"
 import { formatarMoeda } from "../../utils/format.js"
 import { financeiroService } from "../../services/financeiroService.js"
+import { pedidosService } from "../../services/pedidosService.js"
 
 function hojeISO() {
   return new Date().toISOString().slice(0, 10)
@@ -98,9 +99,34 @@ export default function Caixa() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = `burgeros-${dataInicio}-a-${dataFim}.csv`
+    a.download = `flameos-lancamentos-${dataInicio}-a-${dataFim}.csv`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const exportarPedidosCSV = async () => {
+    try {
+      const pedidos = await pedidosService.listarConcluidos({ data_inicio: dataInicio, data_fim: dataFim })
+      if (pedidos.length === 0) return mostrar("Nenhum pedido no período", "erro")
+      const cab = ["#", "Data/Hora", "Cliente/Mesa", "Itens", "Total", "Pagamento", "Status"].join(",")
+      const linhas = pedidos.map((p) => {
+        const itens = p.itens.map((i) => `${i.quantidade}x ${i.nome}`).join(" | ")
+        const data = new Date(p.abertoEm).toLocaleString("pt-BR")
+        const local = p.cliente || p.mesa || "Balcão"
+        const pag = { dinheiro: "Dinheiro", cartao: "Cartão", pix: "PIX", fiado: "Fiado" }[p.forma_pagamento] || p.forma_pagamento || "—"
+        return [p.id, `"${data}"`, `"${local}"`, `"${itens}"`, (p.total_final ?? p.total).toFixed(2), pag, p.status].join(",")
+      })
+      const csv = [cab, ...linhas].join("\n")
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `flameos-pedidos-${dataInicio}-a-${dataFim}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      mostrar("Erro ao exportar pedidos", "erro")
+    }
   }
 
   const deletarLancamento = async (id) => {
@@ -159,9 +185,18 @@ export default function Caixa() {
             onClick={exportarCSV}
             disabled={lancamentos.length === 0}
             className="flex items-center gap-1.5 rounded-lg border border-borda px-4 py-2 text-sm font-semibold text-texto-suave transition-colors hover:border-laranja/50 hover:text-laranja disabled:opacity-40"
+            title="Exportar lançamentos financeiros"
           >
             <Download className="h-4 w-4" />
-            Exportar CSV
+            Lançamentos CSV
+          </button>
+          <button
+            onClick={exportarPedidosCSV}
+            className="flex items-center gap-1.5 rounded-lg border border-borda px-4 py-2 text-sm font-semibold text-texto-suave transition-colors hover:border-laranja/50 hover:text-laranja"
+            title="Exportar pedidos entregues/cancelados"
+          >
+            <Download className="h-4 w-4" />
+            Pedidos CSV
           </button>
           <Botao onClick={() => setModalAberto(true)}>
             <span className="flex items-center gap-1.5">

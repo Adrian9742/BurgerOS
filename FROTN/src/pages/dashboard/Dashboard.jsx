@@ -143,7 +143,7 @@ export default function Dashboard() {
   const [topProdutos, setTopProdutos] = useState([])
   const [faturamentoHoras, setFaturamentoHoras] = useState([])
   const [lembretes, setLembretes] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("burgeros_lembretes") || "[]") } catch { return [] }
+    try { return JSON.parse(localStorage.getItem("flameos_lembretes") || "[]") } catch { return [] }
   })
   const [novoLembrete, setNovoLembrete] = useState("")
 
@@ -179,7 +179,7 @@ export default function Dashboard() {
 
   const salvarLembretes = (lista) => {
     setLembretes(lista)
-    localStorage.setItem("burgeros_lembretes", JSON.stringify(lista))
+    localStorage.setItem("flameos_lembretes", JSON.stringify(lista))
   }
 
   const adicionarLembrete = (e) => {

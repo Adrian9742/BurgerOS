@@ -21,9 +21,9 @@ function formatarData(iso) {
 export default function Sistema() {
   const { mostrar } = useToast()
   const { usuario } = useAuth()
-  const [somAtivado, setSomAtivado] = useState(localStorage.getItem("burgeros_som") !== "false")
+  const [somAtivado, setSomAtivado] = useState(localStorage.getItem("flameos_som") !== "false")
   const [alertaMin, setAlertaMin] = useState(
-    Number(localStorage.getItem("burgeros_alerta_min") || TEMPO_ALERTA_MINUTOS)
+    Number(localStorage.getItem("flameos_alerta_min") || TEMPO_ALERTA_MINUTOS)
   )
   const [alertaTemp, setAlertaTemp] = useState("")
   const [editandoAlerta, setEditandoAlerta] = useState(false)
@@ -56,7 +56,7 @@ export default function Sistema() {
     const v = Number(alertaTemp)
     if (v >= 1 && v <= 120) {
       setAlertaMin(v)
-      localStorage.setItem("burgeros_alerta_min", String(v))
+      localStorage.setItem("flameos_alerta_min", String(v))
       mostrar(`Alerta configurado para ${v} minutos`, "sucesso")
     }
     setEditandoAlerta(false)
@@ -70,7 +70,7 @@ export default function Sistema() {
   const toggleSom = () => {
     const novo = !somAtivado
     setSomAtivado(novo)
-    localStorage.setItem("burgeros_som", String(novo))
+    localStorage.setItem("flameos_som", String(novo))
     mostrar(novo ? "Alertas sonoros ativados" : "Alertas sonoros desativados", "sucesso")
   }
 
@@ -176,7 +176,7 @@ export default function Sistema() {
           <div>
             <h2 className="mb-1 text-base font-bold text-texto">Backup do Banco de Dados</h2>
             <p className="text-sm text-texto-suave">
-              Backups automáticos diários salvos em <code className="rounded bg-fundo px-1.5 py-0.5 text-xs text-laranja">AppData\BurgerOS\backups</code>.
+              Backups automáticos diários salvos em <code className="rounded bg-fundo px-1.5 py-0.5 text-xs text-laranja">AppData\FlameOS\backups</code>.
               Mantém os últimos 30 arquivos.
             </p>
           </div>
@@ -275,7 +275,7 @@ export default function Sistema() {
       <div className="rounded-xl border border-borda bg-card p-6">
         <h2 className="mb-3 text-base font-bold text-texto">Sobre o Sistema</h2>
         <div className="space-y-1.5 text-sm text-texto-suave">
-          <p><span className="font-medium text-texto">BurgerOS</span> — Sistema de Gestão para Hamburgueria</p>
+          <p><span className="font-medium text-texto">FlameOS</span> — Sistema de Gestão para Hamburgueria</p>
           <p>Versão <span className="font-mono text-laranja">1.0.0</span></p>
           <p>Funcionamento 100% offline · Backend local FastAPI + PostgreSQL</p>
         </div>

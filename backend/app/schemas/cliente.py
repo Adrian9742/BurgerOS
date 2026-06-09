@@ -16,11 +16,13 @@ class EnderecoMixin(BaseModel):
 class ClienteCreate(EnderecoMixin):
     nome: str
     telefone: Optional[str] = None
+    observacao_padrao: Optional[str] = None
 
 
 class ClienteUpdate(EnderecoMixin):
     nome: Optional[str] = None
     telefone: Optional[str] = None
+    observacao_padrao: Optional[str] = None
 
 
 class ClienteResponse(EnderecoMixin):
@@ -29,6 +31,7 @@ class ClienteResponse(EnderecoMixin):
     telefone: Optional[str] = None
     totalGasto: float = 0
     ultimoPedido: Optional[str] = None
+    observacao_padrao: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -47,6 +50,7 @@ class ClienteResponse(EnderecoMixin):
             estado=obj.estado,
             totalGasto=float(obj.total_gasto or 0),
             ultimoPedido=obj.ultimo_pedido.isoformat() if obj.ultimo_pedido else None,
+            observacao_padrao=obj.observacao_padrao,
         )
 
 

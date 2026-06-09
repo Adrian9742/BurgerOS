@@ -43,7 +43,11 @@ def atualizar(db: Session, cliente_id: int, dados: ClienteUpdate) -> ClienteResp
 
 
 def deletar(db: Session, cliente_id: int) -> None:
+    from app.models.pedido import Pedido
     cliente = buscar(db, cliente_id)
+    db.query(Pedido).filter(Pedido.cliente_id == cliente_id).update(
+        {"cliente_id": None}, synchronize_session=False
+    )
     db.delete(cliente)
     db.commit()
 

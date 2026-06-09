@@ -53,38 +53,52 @@ function aguardarBackend(tentativas = 40, intervalo = 500) {
 async function iniciarBackend() {
   if (isDev) return
 
-  const python = encontrarPython()
-  if (!python) {
-    dialog.showErrorBox(
-      "BurgerOS — Python não encontrado",
-      "Python 3.10 ou superior precisa estar instalado.\n\nBaixe em: https://python.org/downloads",
-    )
-    app.quit()
-    return
-  }
-
   const backendDir = path.join(process.resourcesPath, "backend")
+  const bundledExe = path.join(backendDir, "run.exe")
   const logPath = path.join(app.getPath("userData"), "backend.log")
   const logFd = fs.openSync(logPath, "a")
 
-  backendProcess = spawn(
-    python,
-    ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000", "--no-access-log"],
-    {
+  // Prefere o executável bundlado (sem Python necessário).
+  // Fallback: usa Python do sistema (modo de desenvolvimento / instalação manual).
+  const usandoBundled = fs.existsSync(bundledExe)
+
+  if (usandoBundled) {
+    backendProcess = spawn(bundledExe, [], {
       cwd: backendDir,
       detached: false,
       windowsHide: true,
       stdio: ["ignore", logFd, logFd],
-      env: { ...process.env, PYTHONPATH: backendDir },
-    },
-  )
+    })
+  } else {
+    const python = encontrarPython()
+    if (!python) {
+      try { fs.closeSync(logFd) } catch {}
+      dialog.showErrorBox(
+        "FlameOS — Python não encontrado",
+        "Python 3.10 ou superior precisa estar instalado.\n\nBaixe em: https://python.org/downloads",
+      )
+      app.quit()
+      return
+    }
+    backendProcess = spawn(
+      python,
+      ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000", "--no-access-log"],
+      {
+        cwd: backendDir,
+        detached: false,
+        windowsHide: true,
+        stdio: ["ignore", logFd, logFd],
+        env: { ...process.env, PYTHONPATH: backendDir },
+      },
+    )
+  }
 
   backendProcess.on("close", () => {
     try { fs.closeSync(logFd) } catch {}
   })
 
   backendProcess.on("error", (err) => {
-    dialog.showErrorBox("BurgerOS — Erro no servidor", `Falha ao iniciar backend:\n${err.message}`)
+    dialog.showErrorBox("FlameOS — Erro no servidor", `Falha ao iniciar backend:\n${err.message}`)
   })
 
   await aguardarBackend()
@@ -179,7 +193,7 @@ function criarJanela() {
     minWidth: 1280,
     minHeight: 720,
     backgroundColor: "#0f0f0f",
-    title: "BurgerOS",
+    title: "FlameOS",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -191,7 +205,7 @@ function criarJanela() {
     let count = 0
     try {
       count = await win.webContents.executeJavaScript(
-        'parseInt(localStorage.getItem("burgeros_pedidos_ativos") || "0")'
+        'parseInt(localStorage.getItem("flameos_pedidos_ativos") || "0")'
       )
     } catch {}
 
@@ -204,7 +218,7 @@ function criarJanela() {
         cancelId: 1,
         title: "Pedidos ativos na fila",
         message: `Há ${count} pedido${count > 1 ? "s" : ""} em andamento!`,
-        detail: "Fechar o BurgerOS agora vai interromper o atendimento. Tem certeza?",
+        detail: "Fechar o FlameOS agora vai interromper o atendimento. Tem certeza?",
       })
       if (response === 0) win.destroy()
     }
@@ -226,7 +240,7 @@ app.whenReady().then(async () => {
     agendarBackups()
     criarJanela()
   } catch (err) {
-    dialog.showErrorBox("BurgerOS — Falha na inicialização", err.message)
+    dialog.showErrorBox("FlameOS — Falha na inicialização", err.message)
     app.quit()
   }
 
